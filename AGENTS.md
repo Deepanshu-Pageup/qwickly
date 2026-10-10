@@ -11,21 +11,29 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # AI Agents and Workflow
 
 ## Mandatory Workflow
-1. **Explore**: Analyze the repository.
-2. **Plan**: Formulate a plan in .ai/tasks/plans/ (status: proposed).
-3. **Explicit Approval**: Wait for explicit user approval before executing the plan.
+1. **Explore**: Analyze the repository using read-only tools.
+2. **Plan**: Formulate a plan (saved in `.ai/tasks/plans/` for major tasks; `status: proposed`).
+3. **Explicit Approval**: Wait for explicit user approval before making file changes or executing commands.
 4. **Implement**: Execute only the approved scope.
 5. **Validate**: Run linters, tests, and builds.
-6. **Review Diff**: Check Git diff for unintended changes.
-7. **Report**: Summarize completed work.
+6. **Review Diff**: Conduct an independent review of the Git diff for unintended changes.
+7. **Report**: Summarize completed work concisely.
+
+## Agent Coordination & Governance
+- **Architect Role**: Responsible for repository exploration, major task planning, and independent code review (`.ai/agents/architect.md`).
+- **Implementer Role**: Responsible for executing explicitly approved plans within scope (`.ai/agents/implementer.md`).
+- **Documentation Principle**: Keep documentation minimal. Save plans only for major tasks. ADRs are created on-demand only.
 
 ## References
 - Context & State: [AI_CONTEXT.md](.ai/AI_CONTEXT.md)
 - Rules: [.ai/rules/](.ai/rules/)
+- ADR Directory: [docs/architecture/decisions/](docs/architecture/decisions/README.md)
 
 ## Prohibitions
-- Never change undocumented architecture.
+- Never change undocumented architecture without approval.
 - No unapproved dependencies.
+- No state-changing Git operations without explicit user authorization.
+- Never create ADR files automatically without explicit user request.
 
 <!-- BEGIN:nextjs-agent-feedback -->
 
