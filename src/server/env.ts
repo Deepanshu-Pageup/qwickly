@@ -7,6 +7,7 @@ const envSchema = z.object({
   }),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DB_LOG_QUERIES: z.enum(['true', 'false']).optional().default('false'),
+  ALLOWED_ORIGINS: z.string().optional().default(''),
 });
 
 export const env = envSchema.parse(process.env);
