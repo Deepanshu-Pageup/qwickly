@@ -6,13 +6,55 @@ import { QrTypeSelector } from '@/components/studio/qr-type-selector';
 import {
   PayloadPlaceholder,
   CustomizationPlaceholder,
-  PreviewPlaceholder,
   ExportActionsPlaceholder,
 } from '@/components/studio/studio-placeholders';
+import { LinkForm } from '@/components/studio/forms/link-form';
+import { TextForm } from '@/components/studio/forms/text-form';
+import { QrPreviewCanvas } from '@/components/studio/qr-preview-canvas';
 import { Badge } from '@/components/ui/badge';
+
+interface FormState {
+  raw: string;
+  encoded: string | null;
+  isValid: boolean;
+}
 
 export default function Home() {
   const [selectedType, setSelectedType] = useState<QrType>('link');
+
+  // Independent state for Link and Text to ensure no state contamination or stale preview when switching
+  const [linkState, setLinkState] = useState<FormState>({
+    raw: '',
+    encoded: null,
+    isValid: false,
+  });
+
+  const [textState, setTextState] = useState<FormState>({
+    raw: '',
+    encoded: null,
+    isValid: false,
+  });
+
+  // Derive the active preview value based strictly on the currently selected QR type
+  const activePreviewState = React.useMemo(() => {
+    if (selectedType === 'link') {
+      return {
+        encodedValue: linkState.encoded,
+        isValid: linkState.isValid,
+      };
+    }
+    if (selectedType === 'text') {
+      return {
+        encodedValue: textState.encoded,
+        isValid: textState.isValid,
+      };
+    }
+    // Any other type: no active encoder in Sub-phase 2.2
+    return {
+      encodedValue: null,
+      isValid: false,
+    };
+  }, [selectedType, linkState, textState]);
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
@@ -55,7 +97,23 @@ export default function Home() {
             </section>
 
             <section aria-label="Payload Configuration">
-              <PayloadPlaceholder selectedType={selectedType} />
+              {selectedType === 'link' ? (
+                <LinkForm
+                  value={linkState.raw}
+                  onChange={(raw, encoded, isValid) =>
+                    setLinkState({ raw, encoded, isValid })
+                  }
+                />
+              ) : selectedType === 'text' ? (
+                <TextForm
+                  value={textState.raw}
+                  onChange={(raw, encoded, isValid) =>
+                    setTextState({ raw, encoded, isValid })
+                  }
+                />
+              ) : (
+                <PayloadPlaceholder selectedType={selectedType} />
+              )}
             </section>
 
             <section aria-label="Design Customization">
@@ -66,7 +124,11 @@ export default function Home() {
           {/* Right Column: Live Inspector, Preview & Export Area */}
           <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
             <section aria-label="Live Preview">
-              <PreviewPlaceholder selectedType={selectedType} />
+              <QrPreviewCanvas
+                selectedType={selectedType}
+                encodedValue={activePreviewState.encodedValue}
+                isValid={activePreviewState.isValid}
+              />
             </section>
 
             <section aria-label="Export Actions">
