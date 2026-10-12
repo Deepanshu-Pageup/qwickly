@@ -7,7 +7,17 @@ QR Generator application.
 Next.js App Router, Tailwind CSS, CrossUI, Prisma, MySQL, Zod, pnpm.
 
 ## Current Phase
-Phase 1 (Setup and Foundation).
+Phase 1 (Setup and Foundation - Ready for Database Migration Gate).
+
+## Completed Work (Verified)
+- **Phase 1.1**: Initial Next.js layout, Tailwind CSS, core configuration.
+- **Phase 1.2 (Database & Environment Foundation)**:
+  - Prisma 7.10.0 configured with `@prisma/adapter-mariadb` driver adapter.
+  - Runtime environment validation in `src/server/env.ts` (Zod) and `PrismaClient` singleton in `src/server/db.ts`.
+  - CLI configuration in `prisma.config.ts` supported by `dotenv` in `devDependencies`.
+  - Safe connectivity test script in `scripts/test-db-connection.ts` with bounded timeout.
+  - Fully verified: `prisma validate`, `tsc --noEmit`, and `eslint` pass with 0 errors.
+  - Active gate: Live database migrations pending user authorization and database credentials.
 
 ## Architectural & Governance Constraints
 - Single monolithic repository.
