@@ -23,6 +23,13 @@ Phase 1 (Setup and Foundation - Security Baseline & Gated Database Operations).
   - Next.js 16 `src/proxy.ts` handler for `/api/:path*` CORS origin negotiation, preflight `OPTIONS` short-circuiting, and Rule 05 inline rationale comments.
   - Environment validation for `ALLOWED_ORIGINS` in `src/server/env.ts` and template in `.env.example`.
   - Fully verified: `tsc --noEmit`, `eslint`, and `next build` (Turbopack production build) pass with 0 errors.
+- **Phase 1.4 (REST API Foundation)**:
+  - Standardized API route conventions under `src/app/api/v1/` with reference health check endpoint (`/api/v1/health`).
+  - Single-point `X-Request-ID` resolution and validation policy (`/^[a-zA-Z0-9_-]{16,64}$/`) with UUIDv4 fallback.
+  - Consistent propagation through handler context, response headers, error envelopes, and structured server logs.
+  - Standard success builders (`apiSuccess`, `apiCreated`, `apiNoContent`, `apiPaginated`) and error envelope (`VALIDATION_ERROR`, `BAD_REQUEST`, `AppError`, internal 500 masking).
+  - Next.js 16 Proxy updated with `X-Request-ID` in allowed and exposed CORS headers.
+  - Fully verified: 15 automated tests passed via `pnpm test`, `eslint` clean, `pnpm build` clean, and focused code audit passed.
 
 ## Architectural & Governance Constraints
 - Single monolithic repository.
