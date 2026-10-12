@@ -30,6 +30,12 @@ Phase 1 (Setup and Foundation - Security Baseline & Gated Database Operations).
   - Standard success builders (`apiSuccess`, `apiCreated`, `apiNoContent`, `apiPaginated`) and error envelope (`VALIDATION_ERROR`, `BAD_REQUEST`, `AppError`, internal 500 masking).
   - Next.js 16 Proxy updated with `X-Request-ID` in allowed and exposed CORS headers.
   - Fully verified: 15 automated tests passed via `pnpm test`, `eslint` clean, `pnpm build` clean, and focused code audit passed.
+- **Phase 1.5 (Documentation & Phase Validation)**:
+  - Overhauled root `README.md` with complete project architecture, prerequisites (Node 20/24+, pnpm 12.11.2, MySQL 8+), step-by-step local setup, verified package scripts, API conventions, database workflow, and recommended CI pipeline (labeled as recommendation, not implemented).
+  - Consolidated Phase 1 verification matrix across 14 criteria: all core foundation tests, lint, types, and build verified exit code 0.
+  - Live database migrations recorded as GATED / PENDING credentials.
+  - CrossUI rendering recorded as DEFERRED to Phase 2.
+  - Fully verified: `pnpm prisma:validate` (0), `tsc --noEmit` (0), `pnpm lint` (0), `pnpm test` (0), `pnpm build` (0).
 
 ## Architectural & Governance Constraints
 - Single monolithic repository.
