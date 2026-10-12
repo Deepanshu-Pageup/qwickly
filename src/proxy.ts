@@ -7,7 +7,8 @@ import type { NextRequest } from 'next/server';
  */
 const CORS_OPTIONS = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Request-ID',
+  'Access-Control-Expose-Headers': 'X-Request-ID',
   'Access-Control-Max-Age': '86400', // Cache preflight response for 24 hours to reduce handshake overhead
 };
 
