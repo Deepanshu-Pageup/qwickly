@@ -27,6 +27,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## References
 - Context & State: [AI_CONTEXT.md](.ai/AI_CONTEXT.md)
 - Rules: [.ai/rules/](.ai/rules/)
+- Frontend UI Standards: [frontend-ui.md](.ai/rules/frontend-ui.md)
 - ADR Directory: [docs/architecture/decisions/](docs/architecture/decisions/README.md)
 
 ## Prohibitions
