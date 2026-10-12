@@ -10,12 +10,28 @@ interface QrPreviewCanvasProps {
   selectedType: QrType;
   encodedValue: string | null;
   isValid: boolean;
+  /**
+   * QR Error Correction Level:
+   * - 'L': ~7% recovery (lowest density, optimal for low-res screens / high data volume)
+   * - 'M': ~15% recovery (default industry standard, balances module density and error tolerance)
+   * - 'Q': ~25% recovery (elevated damage tolerance)
+   * - 'H': ~30% recovery (highest redundancy, required when center logos/emblems are overlaid)
+   */
+  level?: 'L' | 'M' | 'Q' | 'H';
+  /**
+   * Quiet zone module size:
+   * ISO/IEC 18004 QR specification recommends a minimum quiet zone of 4 modules to
+   * prevent edge-detection failures across diverse mobile and physical optical sensors.
+   */
+  marginSize?: number;
 }
 
 export function QrPreviewCanvas({
   selectedType,
   encodedValue,
   isValid,
+  level = 'M',
+  marginSize = 4,
 }: QrPreviewCanvasProps) {
   const metadata = getQrTypeMetadata(selectedType);
   const isSupportedType = selectedType === 'link' || selectedType === 'text';
@@ -46,8 +62,8 @@ export function QrPreviewCanvas({
               <QRCodeSVG
                 value={encodedValue}
                 size={220}
-                level="M"
-                marginSize={2}
+                level={level}
+                marginSize={marginSize}
                 bgColor="#ffffff"
                 fgColor="#000000"
                 aria-label={`Generated QR Code for ${metadata.label}`}
