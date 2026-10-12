@@ -52,28 +52,27 @@ export function ImageForm({ value, onChange }: ImageFormProps) {
   const isMissingExtension = validationResult.success && !hasImageExtension(value);
 
   return (
-    <Card className="rounded-2xl bg-card/90 backdrop-blur-xs border-border/80">
-      <CardHeader className="border-b border-border/50 pb-4">
+    <Card className="rounded-xl bg-card border-border/80">
+      <CardHeader className="border-b border-border/60 pb-3.5">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
-            <CardTitle>Image & Photo QR Configuration</CardTitle>
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+            <CardTitle className="text-sm font-semibold">Image & Photo QR Configuration</CardTitle>
           </div>
-          <Badge variant="secondary" size="sm">
+          <Badge variant="outline" size="sm" className="text-[10px] h-5 px-1.5">
             Direct URL Mode
           </Badge>
         </div>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Provide a direct, publicly accessible HTTPS web link to an online image, banner, or promotional graphic.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="pt-6 space-y-5">
-        {/* Sub-phase 2.4 Cloud Hosting Banner */}
-        <div className="rounded-xl border border-border/70 bg-muted/40 p-3.5 text-xs text-muted-foreground flex items-start gap-2.5">
-          <span className="font-semibold text-foreground shrink-0">Sub-phase 2.4 Notice:</span>
+        {/* URL Configuration Notice */}
+        <div className="rounded-lg border border-border/80 bg-muted/30 p-3 text-xs text-muted-foreground flex items-start gap-2">
           <span>
-            Direct image upload and cloud storage hosting will be enabled in Sub-phase 2.4. In this workstation phase, provide an existing public HTTPS image link. Client-side validation checks URL format; it does not verify server reachability or file existence.
+            Provide an existing public HTTPS link. Client-side validation checks URL format; it does not verify server reachability or file existence.
           </span>
         </div>
 

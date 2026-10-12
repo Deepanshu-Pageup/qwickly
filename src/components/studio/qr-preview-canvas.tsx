@@ -55,9 +55,9 @@ export function QrPreviewCanvas({
   const isLogoActive = Boolean(designSettings?.logo?.src);
 
   return (
-    <Card className="flex flex-col items-center rounded-2xl p-6 shadow-xs bg-card/90 backdrop-blur-xs border-border/80">
-      <div className="w-full flex items-center justify-between border-b border-border/50 pb-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <Card className="flex flex-col items-center rounded-xl p-6 shadow-xs bg-card border-border/80">
+      <div className="w-full flex items-center justify-between border-b border-border/60 pb-3">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Live Preview
         </span>
         <div className="flex items-center gap-1.5">
@@ -78,7 +78,7 @@ export function QrPreviewCanvas({
       {/* QR Code Canvas Frame: Guaranteed opaque solid surface for maximum scannability */}
       <div className="mt-6 flex flex-col items-center w-full">
         <div
-          className="relative flex h-64 w-64 items-center justify-center rounded-2xl border-2 border-zinc-200 bg-white p-4 shadow-sm"
+          className="relative flex h-64 w-64 items-center justify-center rounded-xl border border-border/80 bg-white p-4 shadow-xs"
           role="region"
           aria-label="QR Code Preview"
           style={{ backgroundColor: bgColor }}
@@ -110,9 +110,9 @@ export function QrPreviewCanvas({
               </div>
 
               {/* Informative Center Badge */}
-              <div className="z-10 flex flex-col items-center rounded-xl bg-zinc-900/90 px-3.5 py-2 text-center text-white backdrop-blur-xs shadow-xs">
-                <span className="text-xs font-semibold">{metadata.label} QR</span>
-                <span className="text-[10px] text-zinc-300">
+              <div className="z-10 flex flex-col items-center rounded-lg bg-zinc-900/95 px-3 py-1.5 text-center text-white shadow-xs">
+                <span className="text-xs font-medium">{metadata.label} QR</span>
+                <span className="text-[10px] text-zinc-400">
                   Enter content to preview
                 </span>
               </div>
@@ -129,14 +129,14 @@ export function QrPreviewCanvas({
         {/* Advisory Warnings (Non-blocking Heuristics) */}
         <div className="w-full mt-3 space-y-2">
           {contrastEval.warningMessage && (
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300">
               <span className="font-semibold block mb-0.5">Scannability Advisory:</span>
               {contrastEval.warningMessage}
             </div>
           )}
 
           {effectiveMargin < 4 && (
-            <div className="rounded-xl border border-border/80 bg-muted/30 p-2 text-[11px] text-muted-foreground">
+            <div className="rounded-lg border border-border/80 bg-muted/40 p-2 text-[11px] text-muted-foreground">
               <span className="font-semibold text-foreground">Quiet Zone Advisory:</span> Margins below 4 modules violate ISO/IEC 18004 standards and may fail on dark or textured surfaces.
             </div>
           )}

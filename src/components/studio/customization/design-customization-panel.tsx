@@ -121,18 +121,19 @@ export function DesignCustomizationPanel({
   };
 
   return (
-    <Card className="rounded-2xl bg-card/90 backdrop-blur-xs border-border/80">
-      <CardHeader className="border-b border-border/50 pb-4">
+    <Card className="rounded-xl bg-card border-border/80">
+      <CardHeader className="border-b border-border/60 pb-3.5">
         <div className="flex items-center justify-between w-full">
-          <CardTitle className="text-base">Design & Customization</CardTitle>
+          <CardTitle className="text-sm font-semibold">Design & Customization</CardTitle>
           <Badge
             variant={contrast.isLowContrast || contrast.isInverted ? 'warning' : 'outline'}
             size="sm"
+            className="text-[10px]"
           >
             Contrast: {contrast.ratio.toFixed(1)}:1
           </Badge>
         </div>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Customize colors, error correction, quiet zones, and center logo embedding without altering payload data.
         </CardDescription>
       </CardHeader>

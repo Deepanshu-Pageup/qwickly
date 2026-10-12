@@ -17,7 +17,6 @@ import { AppForm, AppFormValue } from '@/components/studio/forms/app-form';
 import { PdfForm } from '@/components/studio/forms/pdf-form';
 import { ImageForm } from '@/components/studio/forms/image-form';
 import { QrPreviewCanvas } from '@/components/studio/qr-preview-canvas';
-import { Badge } from '@/components/ui/badge';
 import { QrDesignSettings, ErrorCorrectionLevel } from '@/schemas/qr-design';
 
 interface FormState<T> {
@@ -136,27 +135,20 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
       {/* Studio Header */}
-      <header className="border-b border-border/80 bg-background/80 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-base shadow-xs">
+      <header className="border-b border-border/80 bg-background/80 backdrop-blur-md sticky top-0 z-30 transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold text-xs shadow-xs">
               Q
             </div>
-            <div>
-              <h1 className="text-base font-semibold leading-none tracking-tight">
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-sm font-semibold tracking-tight text-foreground">
                 Qwikly Studio
               </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                QR Code Generation & Design
-              </p>
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                Vector QR Code Generator
+              </span>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="success" size="default" className="gap-1.5 py-1 px-3">
-              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              9 Types Activated
-            </Badge>
           </div>
         </div>
       </header>

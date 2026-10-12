@@ -148,35 +148,32 @@ export function PreviewPlaceholder({ selectedType }: PreviewPlaceholderProps) {
 
 export function ExportActionsPlaceholder() {
   return (
-    <Card className="flex flex-col gap-3 rounded-2xl p-6 shadow-xs bg-card/90 backdrop-blur-xs border-border/80">
+    <Card className="flex flex-col gap-3 rounded-xl p-5 shadow-xs bg-card border-border/80">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Export & Download
         </h4>
-        <Badge variant="outline" size="sm">
-          Sub-phase 2.4
-        </Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         <Button
           variant="outline"
           disabled
-          className="h-11 cursor-not-allowed"
+          className="h-9 cursor-not-allowed text-xs font-medium"
         >
           Download PNG
         </Button>
         <Button
           variant="outline"
           disabled
-          className="h-11 cursor-not-allowed"
+          className="h-9 cursor-not-allowed text-xs font-medium"
         >
           Download SVG
         </Button>
       </div>
 
       <p className="text-center text-[11px] text-muted-foreground">
-        Export features will be activated once the vector engine is added.
+        Direct vector and raster image download options will be available upon export engine connection.
       </p>
     </Card>
   );

@@ -71,18 +71,18 @@ export function MapForm({ value, onChange }: MapFormProps) {
   const hasError = touched && !validationResult.success;
 
   return (
-    <Card className="rounded-2xl bg-card/90 backdrop-blur-xs border-border/80">
-      <CardHeader className="border-b border-border/50 pb-4">
+    <Card className="rounded-xl bg-card border-border/80">
+      <CardHeader className="border-b border-border/60 pb-3.5">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
-            <CardTitle>Map Address QR Configuration</CardTitle>
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+            <CardTitle className="text-sm font-semibold">Map Address QR Configuration</CardTitle>
           </div>
-          <Badge variant="outline" size="sm">
+          <Badge variant="outline" size="sm" className="text-[10px] h-5 px-1.5">
             {value.mode === 'address' ? 'Address Search' : 'GPS Coordinates'}
           </Badge>
         </div>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Provide a street address or GPS coordinates that immediately open in Google Maps navigation.
         </CardDescription>
       </CardHeader>
