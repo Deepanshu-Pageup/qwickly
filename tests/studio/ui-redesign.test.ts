@@ -7,7 +7,7 @@ import {
   getCountries,
   guessCountryFromLocale,
 } from '../../src/lib/countries';
-import { whatsappPayloadSchema } from '../../src/schemas/qr-payload';
+import { whatsappPayloadSchema, type SocialPlatform } from '../../src/schemas/qr-payload';
 import { socialPayloadSchema } from '../../src/schemas/payload/social';
 import { appPayloadSchema } from '../../src/schemas/payload/app';
 import { couponPayloadSchema } from '../../src/schemas/payload/coupon';
@@ -89,5 +89,37 @@ describe('Per-type schema modules', () => {
     ]) {
       assert.ok(name in barrel, `${name} missing from qr-payload barrel`);
     }
+  });
+});
+
+describe('Social media: usernames, profile links and post links', () => {
+  const ok = (platform: SocialPlatform, input: string) => {
+    const r = socialPayloadSchema.safeParse({ platform, input });
+    assert.ok(r.success, `${platform}: ${input}`);
+    return r.data;
+  };
+
+  it('still normalizes usernames and profile links', () => {
+    assert.equal(ok('instagram', '@johndoe'), 'https://instagram.com/johndoe/');
+    assert.equal(ok('instagram', 'https://www.instagram.com/johndoe/'), 'https://instagram.com/johndoe/');
+  });
+
+  it('accepts post and content links for every platform', () => {
+    assert.equal(ok('instagram', 'https://www.instagram.com/p/CxYz123AbC/'), 'https://www.instagram.com/p/CxYz123AbC/');
+    assert.equal(ok('x', 'https://x.com/jack/status/20'), 'https://x.com/jack/status/20');
+    assert.equal(ok('x', 'https://twitter.com/jack/status/20'), 'https://twitter.com/jack/status/20');
+    assert.equal(ok('youtube', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    assert.equal(ok('youtube', 'https://youtu.be/dQw4w9WgXcQ'), 'https://youtu.be/dQw4w9WgXcQ');
+    assert.equal(ok('facebook', 'https://www.facebook.com/brand/posts/12345'), 'https://www.facebook.com/brand/posts/12345');
+    assert.equal(ok('tiktok', 'https://www.tiktok.com/@user/video/7300000000000000000'), 'https://www.tiktok.com/@user/video/7300000000000000000');
+    assert.equal(ok('linkedin', 'https://www.linkedin.com/posts/jane-doe_activity-123'), 'https://www.linkedin.com/posts/jane-doe_activity-123');
+    assert.equal(ok('github', 'https://github.com/vercel/next.js'), 'https://github.com/vercel/next.js');
+    assert.equal(ok('linkedin', 'https://lnkd.in/p/d2TGCxKz'), 'https://lnkd.in/p/d2TGCxKz');
+  });
+
+  it('upgrades http post links to https and rejects other hosts and bare domains', () => {
+    assert.equal(ok('x', 'http://x.com/jack/status/20'), 'https://x.com/jack/status/20');
+    assert.equal(socialPayloadSchema.safeParse({ platform: 'instagram', input: 'https://evil.com/p/abc' }).success, false);
+    assert.equal(socialPayloadSchema.safeParse({ platform: 'instagram', input: 'https://instagram.com/' }).success, false);
   });
 });

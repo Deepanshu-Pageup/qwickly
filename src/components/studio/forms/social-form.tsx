@@ -20,13 +20,13 @@ interface SocialFormProps {
 const MAX_INPUT_LENGTH = 2048;
 
 const PLATFORMS: Array<{ id: SocialPlatform; label: string; placeholder: string; prefixHint: string }> = [
-  { id: 'instagram', label: 'Instagram', placeholder: '@username or profile URL', prefixHint: 'instagram.com/' },
-  { id: 'x', label: 'X (Twitter)', placeholder: '@username or profile URL', prefixHint: 'x.com/' },
-  { id: 'linkedin', label: 'LinkedIn', placeholder: 'profile-slug or profile URL', prefixHint: 'linkedin.com/in/' },
-  { id: 'youtube', label: 'YouTube', placeholder: '@channel or channel URL', prefixHint: 'youtube.com/@' },
-  { id: 'facebook', label: 'Facebook', placeholder: 'username or profile URL', prefixHint: 'facebook.com/' },
-  { id: 'tiktok', label: 'TikTok', placeholder: '@username or profile URL', prefixHint: 'tiktok.com/@' },
-  { id: 'github', label: 'GitHub', placeholder: 'username or profile URL', prefixHint: 'github.com/' },
+  { id: 'instagram', label: 'Instagram', placeholder: '@username or profile/post URL', prefixHint: 'instagram.com/' },
+  { id: 'x', label: 'X (Twitter)', placeholder: '@username or profile/post URL', prefixHint: 'x.com/' },
+  { id: 'linkedin', label: 'LinkedIn', placeholder: 'profile-slug or profile/post URL', prefixHint: 'linkedin.com/in/' },
+  { id: 'youtube', label: 'YouTube', placeholder: '@channel or channel/video URL', prefixHint: 'youtube.com/@' },
+  { id: 'facebook', label: 'Facebook', placeholder: 'username or profile/post URL', prefixHint: 'facebook.com/' },
+  { id: 'tiktok', label: 'TikTok', placeholder: '@username or profile/post URL', prefixHint: 'tiktok.com/@' },
+  { id: 'github', label: 'GitHub', placeholder: 'username or profile/post URL', prefixHint: 'github.com/' },
   { id: 'custom', label: 'Custom URL', placeholder: 'https://linktr.ee/yourbrand', prefixHint: 'web URL' },
 ];
 
@@ -97,7 +97,7 @@ export function SocialForm({ value, onChange }: SocialFormProps) {
           <FieldDescription id="social-input-desc">
             {value.platform === 'custom'
               ? 'Any HTTP or HTTPS link-in-bio or portfolio page.'
-              : `Username (with or without @) or a full link, for example ${activePlatform.prefixHint}`}
+              : `Username (with or without @), a profile link, or a post link from ${activePlatform.label}.`}
           </FieldDescription>
         )}
       </Field>

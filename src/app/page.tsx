@@ -267,6 +267,10 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+        Powered By © Pageup Software Services Pvt. Ltd.
+      </footer>
     </div>
   );
 }

@@ -16,6 +16,9 @@ export interface SocialPayloadInput {
   input: string;
 }
 
+/** Hosts that only ever serve content links (never a profile handle in the first path segment). */
+const POST_ONLY_HOSTS = new Set(['youtu.be', 'fb.watch', 'vm.tiktok.com', 'instagr.am', 'lnkd.in', 'www.lnkd.in']);
+
 const PLATFORM_RULES: Record<
   Exclude<SocialPlatform, 'custom'>,
   {
@@ -29,7 +32,7 @@ const PLATFORM_RULES: Record<
 > = {
   instagram: {
     name: 'Instagram',
-    allowedHosts: ['instagram.com', 'www.instagram.com'],
+    allowedHosts: ['instagram.com', 'www.instagram.com', 'instagr.am'],
     handleRegex: /^[a-zA-Z0-9._]{1,30}$/,
     handleError: 'Instagram handle must be 1-30 characters (letters, numbers, periods, underscores)',
     buildUrl: (h) => `https://instagram.com/${h}/`,
@@ -40,7 +43,7 @@ const PLATFORM_RULES: Record<
   },
   x: {
     name: 'X (Twitter)',
-    allowedHosts: ['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'],
+    allowedHosts: ['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com', 'mobile.twitter.com'],
     handleRegex: /^[a-zA-Z0-9_]{1,15}$/,
     handleError: 'X/Twitter handle must be 1-15 characters (letters, numbers, underscores)',
     buildUrl: (h) => `https://x.com/${h}`,
@@ -51,7 +54,7 @@ const PLATFORM_RULES: Record<
   },
   linkedin: {
     name: 'LinkedIn',
-    allowedHosts: ['linkedin.com', 'www.linkedin.com'],
+    allowedHosts: ['linkedin.com', 'www.linkedin.com', 'lnkd.in', 'www.lnkd.in'],
     handleRegex: /^[a-zA-Z0-9_-]{3,100}$/,
     handleError: 'LinkedIn profile slug must be 3-100 characters',
     buildUrl: (h) => `https://linkedin.com/in/${h}/`,
@@ -62,7 +65,7 @@ const PLATFORM_RULES: Record<
   },
   youtube: {
     name: 'YouTube',
-    allowedHosts: ['youtube.com', 'www.youtube.com'],
+    allowedHosts: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'],
     handleRegex: /^[a-zA-Z0-9._-]{3,30}$/,
     handleError: 'YouTube handle must be 3-30 characters',
     buildUrl: (h) => `https://youtube.com/@${h}`,
@@ -73,7 +76,7 @@ const PLATFORM_RULES: Record<
   },
   facebook: {
     name: 'Facebook',
-    allowedHosts: ['facebook.com', 'www.facebook.com'],
+    allowedHosts: ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.com', 'www.fb.com', 'fb.watch'],
     handleRegex: /^[a-zA-Z0-9.]{5,50}$/,
     handleError: 'Facebook username must be 5-50 characters',
     buildUrl: (h) => `https://facebook.com/${h}`,
@@ -84,7 +87,7 @@ const PLATFORM_RULES: Record<
   },
   tiktok: {
     name: 'TikTok',
-    allowedHosts: ['tiktok.com', 'www.tiktok.com'],
+    allowedHosts: ['tiktok.com', 'www.tiktok.com', 'm.tiktok.com', 'vm.tiktok.com'],
     handleRegex: /^[a-zA-Z0-9._]{2,24}$/,
     handleError: 'TikTok handle must be 2-24 characters',
     buildUrl: (h) => `https://tiktok.com/@${h}`,
@@ -162,16 +165,25 @@ export const socialPayloadSchema = z
         return z.NEVER;
       }
 
-      const extracted = rule.extractHandleFromPath(parsed.pathname);
-      if (!extracted || !rule.handleRegex.test(extracted)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Unable to extract a valid ${rule.name} profile identifier from URL`,
-        });
-        return z.NEVER;
+      // Short links and links with query parameters (e.g. youtube.com/watch?v=...) are content
+      // URLs, never profile handles, so skip handle extraction for them.
+      const isContentUrl = POST_ONLY_HOSTS.has(hostname) || parsed.search.length > 1;
+      const extracted = isContentUrl ? null : rule.extractHandleFromPath(parsed.pathname);
+      if (extracted && rule.handleRegex.test(extracted)) {
+        return rule.buildUrl(extracted);
       }
 
-      return rule.buildUrl(extracted);
+      // Post / video / repository links: keep the full path and query, forced to HTTPS.
+      if (parsed.pathname.length > 1 || parsed.search.length > 1) {
+        parsed.protocol = 'https:';
+        return parsed.toString();
+      }
+
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Enter a ${rule.name} username, profile link, or post link`,
+      });
+      return z.NEVER;
     }
 
     // Direct handle input: strip leading @ if present
