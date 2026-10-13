@@ -18,6 +18,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -112,9 +113,11 @@ function ComposerEditorProvider({
       onValueChange?.(nextValue, details);
     },
   });
-  const reset = () => editor.reset(defaultValue);
+  const reset = useCallback(() => editor.reset(defaultValue), [defaultValue, editor]);
   const resetRef = useRef(reset);
-  resetRef.current = reset;
+  useEffect(() => {
+    resetRef.current = reset;
+  }, [reset]);
   useEffect(() => {
     const form = editor.rootRef.current?.closest("form");
     if (!form) return;
@@ -371,12 +374,15 @@ function useComposerInputLayout() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState<HTMLElement | null>(null);
   const scheduleMeasureRef = useRef<(() => void) | null>(null);
+  const tokenHosts = useMemo(() => editor?.tokenHosts ?? [], [editor]);
   useLayoutEffect(() => {
-    for (const host of editor?.tokenHosts ?? []) {
+    for (const host of tokenHosts) {
       const fallback = host.previousElementSibling;
-      if (fallback instanceof HTMLElement) fallback.hidden = true;
+      if (fallback instanceof HTMLElement) {
+        fallback.setAttribute("hidden", "true");
+      }
     }
-  }, [editor?.tokenHosts]);
+  }, [tokenHosts]);
   useLayoutEffect(() => {
     const scroll = scrollRef.current;
     if (!scroll || !input) return;

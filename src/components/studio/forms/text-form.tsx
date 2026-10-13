@@ -47,22 +47,22 @@ export function TextForm({ value, onChange }: TextFormProps) {
   const isOverLimit = value.length > 1000;
 
   return (
-    <Card className="rounded-2xl bg-card/90 backdrop-blur-xs border-border/80">
-      <CardHeader className="border-b border-border/50 pb-4">
+    <Card className="rounded-xl bg-card border-border/80">
+      <CardHeader className="border-b border-border/60 pb-3.5">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
-            <CardTitle>Text QR Configuration</CardTitle>
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+            <CardTitle className="text-sm font-semibold">Text QR Configuration</CardTitle>
           </div>
           <Badge
             variant={isOverLimit ? 'destructive' : 'outline'}
             size="sm"
-            className="font-mono text-[10px]"
+            className="font-mono text-[10px] h-5 px-1.5"
           >
             {value.length}/1000
           </Badge>
         </div>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Enter plain text, notes, or messages. Line breaks and whitespace are preserved exactly.
         </CardDescription>
       </CardHeader>
