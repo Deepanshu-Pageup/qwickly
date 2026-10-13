@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Check, ChevronDown, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Check, ChevronDown, X, Upload, AlertCircle } from 'lucide-react';
 import {
   QrDesignSettings,
   ErrorCorrectionLevel,
@@ -13,6 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleTrigger, CollapsiblePanel } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { PRESET_LOGOS, glyphAttrs } from './logo-presets';
+import {
+  validateLogoFile,
+  readLogoAsDataUrl,
+  verifyImageCanDecode,
+} from '@/lib/logo-upload';
 
 interface DesignCustomizationPanelProps {
   settings: QrDesignSettings;
@@ -168,6 +173,14 @@ export function DesignCustomizationPanel({
   onSavedLevelChange,
 }: DesignCustomizationPanelProps) {
   const isLogoActive = Boolean(settings.logo?.src);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Identify whether active logo is a custom uploaded image vs a built-in preset
+  const isCustomLogo =
+    isLogoActive &&
+    !PRESET_LOGOS.some((preset) => preset.src === settings.logo?.src);
 
   const handleLevelSelect = (newLevel: ErrorCorrectionLevel) => {
     if (isLogoActive) return; // Locked while logo is active
@@ -176,6 +189,7 @@ export function DesignCustomizationPanel({
   };
 
   const handleLogoSelect = (src: string) => {
+    setUploadError(null);
     if (!isLogoActive) {
       // Save current level before elevating to H
       onSavedLevelChange(settings.level);
@@ -192,11 +206,41 @@ export function DesignCustomizationPanel({
   };
 
   const handleClearLogo = () => {
+    setUploadError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     onChange({
       ...settings,
       level: savedLevelBeforeLogo, // Restore previously selected error correction
       logo: null,
     });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError(null);
+    const validation = validateLogoFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error ?? 'Invalid image file.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const dataUrl = await readLogoAsDataUrl(file);
+      await verifyImageCanDecode(dataUrl);
+      handleLogoSelect(dataUrl);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to process logo image.';
+      setUploadError(msg);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -233,34 +277,88 @@ export function DesignCustomizationPanel({
           )}
         </div>
 
-        <div role="group" aria-label="Logo presets" className="flex flex-wrap items-center gap-2">
-          {PRESET_LOGOS.map(({ id, label, Icon, glyph, src }) => {
-            const isSelected = settings.logo?.src === src;
-            return (
-              <Button
-                key={id}
-                type="button"
-                variant={isSelected ? 'default' : 'outline'}
-                size="icon"
-                aria-label={label}
-                aria-pressed={isSelected}
-                title={label}
-                onClick={() => handleLogoSelect(src)}
-                className="pointer-coarse:size-11"
+        {/* Upload Logo Action & Presets */}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+              className="sr-only"
+              id="qr-logo-upload-input"
+              onChange={handleFileChange}
+              disabled={isUploading}
+            />
+            <Button
+              type="button"
+              variant={isCustomLogo ? 'default' : 'outline'}
+              size="sm"
+              loading={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="pointer-coarse:min-h-11"
+              title="Upload PNG, JPEG, or WebP logo (max 1.5 MB)"
+            >
+              <Upload className="size-3.5" aria-hidden="true" />
+              {isCustomLogo ? 'Replace logo' : 'Upload logo'}
+            </Button>
+
+            {/* Custom Uploaded Logo Thumbnail Badge */}
+            {isCustomLogo && settings.logo?.src && (
+              <div
+                className="relative flex size-9 items-center justify-center rounded-md border-2 border-primary bg-background p-1 shadow-xs"
+                title="Active custom uploaded logo"
               >
-                {Icon ? (
-                  <Icon aria-hidden="true" />
-                ) : (
-                  <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    {...glyphAttrs(id)}
-                    dangerouslySetInnerHTML={{ __html: glyph ?? '' }}
-                  />
-                )}
-              </Button>
-            );
-          })}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={settings.logo.src}
+                  alt="Custom uploaded logo preview"
+                  className="size-full object-contain"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Validation Error Banner */}
+          {uploadError && (
+            <div
+              className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive-foreground"
+              role="alert"
+              aria-live="polite"
+            >
+              <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-destructive" aria-hidden="true" />
+              <span>{uploadError}</span>
+            </div>
+          )}
+
+          <div role="group" aria-label="Logo presets" className="flex flex-wrap items-center gap-2">
+            {PRESET_LOGOS.map(({ id, label, Icon, glyph, src }) => {
+              const isSelected = settings.logo?.src === src;
+              return (
+                <Button
+                  key={id}
+                  type="button"
+                  variant={isSelected ? 'default' : 'outline'}
+                  size="icon"
+                  aria-label={label}
+                  aria-pressed={isSelected}
+                  title={label}
+                  onClick={() => handleLogoSelect(src)}
+                  className="pointer-coarse:size-11"
+                >
+                  {Icon ? (
+                    <Icon aria-hidden="true" />
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      {...glyphAttrs(id)}
+                      dangerouslySetInnerHTML={{ __html: glyph ?? '' }}
+                    />
+                  )}
+                </Button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

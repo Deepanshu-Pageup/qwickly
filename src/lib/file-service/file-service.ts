@@ -474,12 +474,22 @@ export class FileService {
   }
 
   /**
-   * Shared helper: Loads an image element from an Object URL.
+   * Shared helper: Loads an image element from an Object URL and waits for full decoding.
    */
   private loadImage(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(img);
+      img.onload = async () => {
+        try {
+          if ('decode' in img && typeof img.decode === 'function') {
+            await img.decode();
+          }
+          resolve(img);
+        } catch {
+          // If decode fails or is not applicable, resolve the loaded image
+          resolve(img);
+        }
+      };
       img.onerror = () =>
         reject(new Error('Failed to load SVG markup into image element.'));
       img.src = src;
