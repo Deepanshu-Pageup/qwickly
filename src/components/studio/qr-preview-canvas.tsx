@@ -3,7 +3,6 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QrType, getQrTypeMetadata } from '@/types/qr';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   QrDesignSettings,
@@ -20,6 +19,8 @@ interface QrPreviewCanvasProps {
   marginSize?: number;
   designSettings?: QrDesignSettings;
 }
+
+const PREVIEW_SIZE = 240;
 
 export function QrPreviewCanvas({
   selectedType,
@@ -43,7 +44,7 @@ export function QrPreviewCanvas({
   const imageSettings = React.useMemo(() => {
     if (!designSettings?.logo?.src) return undefined;
     const ratio = Math.min(designSettings.logo.sizeRatio ?? 0.18, 0.2); // Strict 20% max cap
-    const pixelSize = Math.round(220 * ratio);
+    const pixelSize = Math.round(PREVIEW_SIZE * ratio);
     return {
       src: designSettings.logo.src,
       height: pixelSize,
@@ -53,95 +54,85 @@ export function QrPreviewCanvas({
   }, [designSettings]);
 
   const isLogoActive = Boolean(designSettings?.logo?.src);
+  const hasQr = isValid && Boolean(encodedValue);
 
   return (
-    <Card className="flex flex-col items-center rounded-xl p-6 shadow-xs bg-card border-border/80">
-      <div className="w-full flex items-center justify-between border-b border-border/60 pb-3">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Live Preview
-        </span>
+    <div className="space-y-3">
+      {/* Preview toolbar - the only glass surface in the right column */}
+      <div className="glass-panel flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
+        <h2 className="text-base font-semibold leading-none tracking-tight">Preview</h2>
         <div className="flex items-center gap-1.5">
           {isLogoActive && (
-            <Badge variant="secondary" size="sm" className="text-[10px]">
-              Logo Active (EC: H)
+            <Badge variant="secondary" size="sm">
+              Logo · EC High
             </Badge>
           )}
-          <Badge
-            variant={isValid ? 'success' : 'secondary'}
-            size="sm"
-          >
-            {isValid ? 'Payload Valid' : 'Awaiting Input'}
+          <Badge variant={hasQr ? 'success' : 'secondary'} size="sm">
+            {hasQr ? 'Content valid' : 'Waiting for content'}
           </Badge>
         </div>
       </div>
 
-      {/* QR Code Canvas Frame: Guaranteed opaque solid surface for maximum scannability */}
-      <div className="mt-6 flex flex-col items-center w-full">
-        <div
-          className="relative flex h-64 w-64 items-center justify-center rounded-xl border border-border/80 bg-white p-4 shadow-xs"
-          role="region"
-          aria-label="QR Code Preview"
-          style={{ backgroundColor: bgColor }}
-        >
-          {isValid && encodedValue ? (
-            <div className="flex items-center justify-center p-2 rounded-lg" style={{ backgroundColor: bgColor }}>
-              <QRCodeSVG
-                value={encodedValue}
-                size={220}
-                level={effectiveLevel}
-                marginSize={effectiveMargin}
-                bgColor={bgColor}
-                fgColor={fgColor}
-                imageSettings={imageSettings}
-                aria-label={`Generated QR Code for ${metadata.label}`}
-              />
-            </div>
-          ) : (
-            <div className="relative flex h-full w-full items-center justify-center">
-              {/* Decorative Corner Finder Patterns for Placeholder / Empty State */}
-              <div className="absolute top-2 left-2 h-12 w-12 rounded-lg border-4 border-zinc-950 p-1 bg-white">
-                <div className="h-full w-full rounded-xs bg-zinc-950" />
-              </div>
-              <div className="absolute top-2 right-2 h-12 w-12 rounded-lg border-4 border-zinc-950 p-1 bg-white">
-                <div className="h-full w-full rounded-xs bg-zinc-950" />
-              </div>
-              <div className="absolute bottom-2 left-2 h-12 w-12 rounded-lg border-4 border-zinc-950 p-1 bg-white">
-                <div className="h-full w-full rounded-xs bg-zinc-950" />
-              </div>
-
-              {/* Informative Center Badge */}
-              <div className="z-10 flex flex-col items-center rounded-lg bg-zinc-900/95 px-3 py-1.5 text-center text-white shadow-xs">
-                <span className="text-xs font-medium">{metadata.label} QR</span>
-                <span className="text-[10px] text-zinc-400">
-                  Enter content to preview
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <p className="mt-4 text-center text-xs text-muted-foreground max-w-xs">
-          {isValid
-            ? `Live vector QR code generated for ${metadata.label}.`
-            : `Provide valid ${metadata.label.toLowerCase()} payload details to generate a live QR code.`}
-        </p>
-
-        {/* Advisory Warnings (Non-blocking Heuristics) */}
-        <div className="w-full mt-3 space-y-2">
-          {contrastEval.warningMessage && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300">
-              <span className="font-semibold block mb-0.5">Scannability Advisory:</span>
-              {contrastEval.warningMessage}
-            </div>
-          )}
-
-          {effectiveMargin < 4 && (
-            <div className="rounded-lg border border-border/80 bg-muted/40 p-2 text-[11px] text-muted-foreground">
-              <span className="font-semibold text-foreground">Quiet Zone Advisory:</span> Margins below 4 modules violate ISO/IEC 18004 standards and may fail on dark or textured surfaces.
-            </div>
-          )}
-        </div>
+      {/* QR surface: always an opaque solid color, never glass, blur or theme-dependent transparency */}
+      <div
+        className="mx-auto flex aspect-square w-full max-w-72 items-center justify-center overflow-hidden rounded-lg border border-border"
+        role="img"
+        aria-label={hasQr ? `Generated QR code for ${metadata.label}` : 'QR code preview, waiting for content'}
+        style={hasQr ? { backgroundColor: bgColor } : undefined}
+      >
+        {hasQr && encodedValue ? (
+          <QRCodeSVG
+            value={encodedValue}
+            size={PREVIEW_SIZE}
+            level={effectiveLevel}
+            marginSize={effectiveMargin}
+            bgColor={bgColor}
+            fgColor={fgColor}
+            imageSettings={imageSettings}
+            style={{ width: '100%', height: '100%' }}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2 bg-muted/40 px-6 text-center text-muted-foreground h-full w-full justify-center">
+            <svg
+              className="size-8"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4" />
+            </svg>
+            <p className="text-sm font-medium text-foreground">No QR code yet</p>
+            <p className="text-xs">Enter valid content to generate your QR code.</p>
+          </div>
+        )}
       </div>
-    </Card>
+
+      {hasQr && (
+        <p className="text-center text-xs text-muted-foreground">
+          Contrast {contrastEval.ratio.toFixed(1)}:1. Always test-scan before printing.
+        </p>
+      )}
+
+      {/* Advisory warnings (non-blocking heuristics) */}
+      <div className="space-y-2" aria-live="polite">
+        {contrastEval.warningMessage && (
+          <p className="rounded-md border border-warning/40 bg-warning/10 p-2.5 text-xs text-warning-foreground">
+            {contrastEval.warningMessage}
+          </p>
+        )}
+        {effectiveMargin < 4 && (
+          <p className="rounded-md border border-border bg-muted/50 p-2.5 text-xs text-muted-foreground">
+            Quiet zone below 4 modules is outside the ISO/IEC 18004 recommendation and may fail on dark or busy surfaces.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

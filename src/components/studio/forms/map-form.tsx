@@ -2,11 +2,10 @@
 
 import React from 'react';
 import { mapPayloadSchema, MapPayloadInput } from '@/schemas/qr-payload';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { FormSection } from './form-section';
+import { OptionGroup } from './option-group';
 
 export interface MapFormValue {
   mode: 'address' | 'coordinates';
@@ -19,6 +18,15 @@ interface MapFormProps {
   value: MapFormValue;
   onChange: (value: MapFormValue, encodedOutput: string | null, isValid: boolean) => void;
 }
+
+const MAX_ADDRESS_LENGTH = 300;
+/** Longest valid coordinate, e.g. "-122.084095", with headroom for extra decimals. */
+const MAX_COORDINATE_LENGTH = 20;
+
+const MODES: ReadonlyArray<{ id: MapFormValue['mode']; label: string }> = [
+  { id: 'address', label: 'Address or place' },
+  { id: 'coordinates', label: 'GPS coordinates' },
+];
 
 export function MapForm({ value, onChange }: MapFormProps) {
   const [touched, setTouched] = React.useState(false);
@@ -71,106 +79,89 @@ export function MapForm({ value, onChange }: MapFormProps) {
   const hasError = touched && !validationResult.success;
 
   return (
-    <Card className="rounded-xl bg-card border-border/80">
-      <CardHeader className="border-b border-border/60 pb-3.5">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            <CardTitle className="text-sm font-semibold">Map Address QR Configuration</CardTitle>
-          </div>
-          <Badge variant="outline" size="sm" className="text-[10px] h-5 px-1.5">
-            {value.mode === 'address' ? 'Address Search' : 'GPS Coordinates'}
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">
-          Provide a street address or GPS coordinates that immediately open in Google Maps navigation.
-        </CardDescription>
-      </CardHeader>
+    <FormSection title="Content" tag="Map Address">
+      <Field>
+        <FieldLabel>Location type</FieldLabel>
+        <OptionGroup
+          label="Location input mode"
+          value={value.mode}
+          options={MODES}
+          onChange={(mode) => updateFields({ ...value, mode })}
+        />
+      </Field>
 
-      <CardContent className="pt-6 space-y-5">
+      {value.mode === 'address' ? (
         <Field>
-          <FieldLabel>Location Input Mode</FieldLabel>
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              size="sm"
-              variant={value.mode === 'address' ? 'default' : 'outline'}
-              onClick={() => updateFields({ ...value, mode: 'address' })}
-              className="text-xs"
-            >
-              Address & Places
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={value.mode === 'coordinates' ? 'default' : 'outline'}
-              onClick={() => updateFields({ ...value, mode: 'coordinates' })}
-              className="text-xs"
-            >
-              GPS Coordinates (Lat / Lng)
-            </Button>
-          </div>
-        </Field>
-
-        {value.mode === 'address' ? (
-          <Field>
-            <div className="flex items-center justify-between">
-              <FieldLabel htmlFor="map-address">Street Address or Place Name</FieldLabel>
-              <span className="text-[10px] text-muted-foreground">{value.addressQuery.length} / 300</span>
-            </div>
-            <Input
-              id="map-address"
-              type="text"
-              placeholder="e.g. 1600 Amphitheatre Pkwy, Mountain View, CA"
-              value={value.addressQuery}
-              onChange={(e) => updateFields({ ...value, addressQuery: e.target.value })}
-              aria-invalid={hasError}
-              className={hasError ? 'border-destructive focus-visible:ring-destructive' : ''}
-            />
-            <FieldDescription>
-              Enter a full business address, landmark, or street name.
+          <FieldLabel htmlFor="map-address">Address or place name</FieldLabel>
+          <Input
+            id="map-address"
+            type="text"
+            maxLength={MAX_ADDRESS_LENGTH}
+            placeholder="1600 Amphitheatre Pkwy, Mountain View, CA"
+            value={value.addressQuery}
+            onChange={(e) =>
+              updateFields({ ...value, addressQuery: e.target.value.slice(0, MAX_ADDRESS_LENGTH) })
+            }
+            onBlur={() => value.addressQuery && setTouched(true)}
+            aria-invalid={hasError}
+            aria-describedby={hasError ? 'map-error' : 'map-desc'}
+          />
+          {hasError ? (
+            <FieldError match id="map-error">{validationResult.error}</FieldError>
+          ) : (
+            <FieldDescription id="map-desc">
+              A business address, landmark, or street. Opens in Google Maps.
             </FieldDescription>
-            {hasError && <FieldError>{validationResult.error}</FieldError>}
-          </Field>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel htmlFor="map-lat">Latitude</FieldLabel>
-                <Input
-                  id="map-lat"
-                  type="text"
-                  placeholder="e.g. 37.422004"
-                  value={value.latitude}
-                  onChange={(e) => updateFields({ ...value, latitude: e.target.value })}
-                  aria-invalid={hasError}
-                  className={hasError ? 'border-destructive focus-visible:ring-destructive' : ''}
-                />
-                <FieldDescription>-90 to 90 degrees</FieldDescription>
-              </Field>
+          )}
+        </Field>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="map-lat">Latitude</FieldLabel>
+              <Input
+                id="map-lat"
+                type="text"
+                inputMode="decimal"
+                maxLength={MAX_COORDINATE_LENGTH}
+                placeholder="37.422004"
+                value={value.latitude}
+                onChange={(e) =>
+                  updateFields({ ...value, latitude: e.target.value.slice(0, MAX_COORDINATE_LENGTH) })
+                }
+                onBlur={() => value.latitude && setTouched(true)}
+                aria-invalid={hasError}
+                aria-describedby={hasError ? 'map-error' : undefined}
+              />
+              <FieldDescription>-90 to 90</FieldDescription>
+            </Field>
 
-              <Field>
-                <FieldLabel htmlFor="map-lng">Longitude</FieldLabel>
-                <Input
-                  id="map-lng"
-                  type="text"
-                  placeholder="e.g. -122.084095"
-                  value={value.longitude}
-                  onChange={(e) => updateFields({ ...value, longitude: e.target.value })}
-                  aria-invalid={hasError}
-                  className={hasError ? 'border-destructive focus-visible:ring-destructive' : ''}
-                />
-                <FieldDescription>-180 to 180 degrees</FieldDescription>
-              </Field>
-            </div>
-            {hasError && (
-              <p className="text-destructive text-xs font-medium" role="alert">
-                {validationResult.error}
-              </p>
-            )}
+            <Field>
+              <FieldLabel htmlFor="map-lng">Longitude</FieldLabel>
+              <Input
+                id="map-lng"
+                type="text"
+                inputMode="decimal"
+                maxLength={MAX_COORDINATE_LENGTH}
+                placeholder="-122.084095"
+                value={value.longitude}
+                onChange={(e) =>
+                  updateFields({ ...value, longitude: e.target.value.slice(0, MAX_COORDINATE_LENGTH) })
+                }
+                onBlur={() => value.longitude && setTouched(true)}
+                aria-invalid={hasError}
+                aria-describedby={hasError ? 'map-error' : undefined}
+              />
+              <FieldDescription>-180 to 180</FieldDescription>
+            </Field>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          {hasError && (
+            <p id="map-error" className="text-xs font-medium text-destructive-foreground" role="alert">
+              {validationResult.error}
+            </p>
+          )}
+        </div>
+      )}
+    </FormSection>
   );
 }

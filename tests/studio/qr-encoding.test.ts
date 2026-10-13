@@ -249,6 +249,25 @@ describe('QR Encoding & Scannability Verification Suite', () => {
   });
 
   describe('Group D: QrPreviewCanvas Integration Component', () => {
+    type TreeNode = { type?: unknown; props?: { children?: unknown } & Record<string, unknown> };
+
+    /** Depth-first search of a React element tree for the first element matching `predicate`. */
+    function findElement(node: unknown, predicate: (el: TreeNode) => boolean): TreeNode | null {
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          const hit = findElement(child, predicate);
+          if (hit) return hit;
+        }
+        return null;
+      }
+      if (!node || typeof node !== 'object') return null;
+      const el = node as TreeNode;
+      if (predicate(el)) return el;
+      return findElement(el.props?.children, predicate);
+    }
+
+    const isQrCode = (el: TreeNode) => el.type === QRCodeSVG;
+
     it('renders QrPreviewCanvas with default ISO marginSize=4 and level=M', () => {
       const element = QrPreviewCanvas({
         selectedType: 'link',
@@ -256,16 +275,11 @@ describe('QR Encoding & Scannability Verification Suite', () => {
         isValid: true,
       });
 
-      assert.ok(element);
-      // Verify canvas container structure
-      const container = element.props.children[1];
-      const frame = container.props.children[0];
-      const qrWrapper = frame.props.children;
-      const qrCode = qrWrapper.props.children;
-
-      assert.equal(qrCode.props.value, 'https://qwikly.dev/');
-      assert.equal(qrCode.props.level, 'M');
-      assert.equal(qrCode.props.marginSize, 4);
+      const qrCode = findElement(element, isQrCode);
+      assert.ok(qrCode, 'QRCodeSVG should be rendered for valid content');
+      assert.equal(qrCode.props?.value, 'https://qwikly.dev/');
+      assert.equal(qrCode.props?.level, 'M');
+      assert.equal(qrCode.props?.marginSize, 4);
     });
 
     it('accepts custom error correction level and marginSize overrides', () => {
@@ -277,29 +291,25 @@ describe('QR Encoding & Scannability Verification Suite', () => {
         marginSize: 6,
       });
 
-      const container = element.props.children[1];
-      const frame = container.props.children[0];
-      const qrWrapper = frame.props.children;
-      const qrCode = qrWrapper.props.children;
-
-      assert.equal(qrCode.props.level, 'H');
-      assert.equal(qrCode.props.marginSize, 6);
+      const qrCode = findElement(element, isQrCode);
+      assert.ok(qrCode);
+      assert.equal(qrCode.props?.level, 'H');
+      assert.equal(qrCode.props?.marginSize, 6);
     });
 
-    it('renders placeholder state without QRCodeSVG when input is invalid', () => {
+    it('renders an empty state without any QR code when input is invalid', () => {
       const element = QrPreviewCanvas({
         selectedType: 'link',
         encodedValue: null,
         isValid: false,
       });
 
-      const container = element.props.children[1];
-      const frame = container.props.children[0];
-      const fragment = frame.props.children;
-      // In placeholder state, frame renders a fragment containing 3 decorative finder boxes + 1 center badge
-      const placeholderChildren = fragment.props.children;
-      assert.ok(Array.isArray(placeholderChildren));
-      assert.equal(placeholderChildren.length, 4);
+      assert.equal(findElement(element, isQrCode), null, 'no QR (real or decorative) before valid content');
+      const emptyState = findElement(
+        element,
+        (el) => el.type === 'p' && el.props?.children === 'No QR code yet',
+      );
+      assert.ok(emptyState, 'calm empty-state message should be shown');
     });
   });
 });

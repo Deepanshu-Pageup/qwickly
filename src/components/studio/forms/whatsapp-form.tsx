@@ -2,13 +2,22 @@
 
 import React from 'react';
 import { whatsappPayloadSchema } from '@/schemas/qr-payload';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import {
+  buildInternationalPhone,
+  findCountry,
+  guessCountryFromLocale,
+  sanitizeNationalNumber,
+} from '@/lib/countries';
+import { FormSection, CharCounter } from './form-section';
+import { CountryCodeSelect } from './country-code-select';
 
 export interface WhatsAppFormValue {
+  /** ISO 3166-1 alpha-2 code driving the calling-code prefix. */
+  country: string;
+  /** National number as typed by the user (digits only, no calling code). */
   phone: string;
   message: string;
 }
@@ -18,101 +27,120 @@ interface WhatsAppFormProps {
   onChange: (value: WhatsAppFormValue, encodedOutput: string | null, isValid: boolean) => void;
 }
 
+const MAX_MESSAGE_LENGTH = 500;
+
 export function WhatsAppForm({ value, onChange }: WhatsAppFormProps) {
   const [touched, setTouched] = React.useState(false);
+  const dial = findCountry(value.country).dial;
+  const maxNationalDigits = 15 - dial.length;
+
+  // Pre-select the visitor's likely country once, only while the form is still pristine.
+  const didGuessCountry = React.useRef(false);
+  React.useEffect(() => {
+    if (didGuessCountry.current) return;
+    didGuessCountry.current = true;
+    if (value.phone || value.message) return;
+    const guess = guessCountryFromLocale(typeof navigator !== 'undefined' ? navigator.language : undefined);
+    if (guess !== value.country) {
+      onChange({ ...value, country: guess }, null, false);
+    }
+    // Runs once on mount; `value`/`onChange` are intentionally read at that moment only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toPayload = (next: WhatsAppFormValue) => ({
+    phone: buildInternationalPhone(findCountry(next.country).dial, next.phone),
+    message: next.message,
+  });
 
   const validationResult = React.useMemo(() => {
     if (!value.phone.trim()) {
-      return { success: false as const, error: 'Please enter a phone number with country code' };
+      return { success: false as const, error: 'Please enter a phone number' };
     }
-    const result = whatsappPayloadSchema.safeParse(value);
+    const result = whatsappPayloadSchema.safeParse({
+      phone: buildInternationalPhone(dial, value.phone),
+      message: value.message,
+    });
     if (result.success) {
-      return { success: true as const, error: null, normalized: result.data };
+      return { success: true as const, error: null };
     }
     const issue = result.error.issues[0];
     return {
       success: false as const,
       error: issue ? issue.message : 'Invalid phone number format',
-      normalized: null,
     };
-  }, [value]);
+  }, [value, dial]);
 
-  const updateFields = (phone: string, message: string) => {
+  const updateFields = (next: WhatsAppFormValue) => {
     if (!touched) setTouched(true);
-    const nextVal = { phone, message };
-    const result = whatsappPayloadSchema.safeParse(nextVal);
+    const result = whatsappPayloadSchema.safeParse(toPayload(next));
     if (result.success) {
-      onChange(nextVal, result.data, true);
+      onChange(next, result.data, true);
     } else {
-      onChange(nextVal, null, false);
+      onChange(next, null, false);
     }
   };
 
   const hasPhoneError = touched && !validationResult.success;
-  const isMessageOverLimit = value.message.length > 500;
 
   return (
-    <Card className="rounded-xl bg-card border-border/80">
-      <CardHeader className="border-b border-border/60 pb-3.5">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            <CardTitle className="text-sm font-semibold">WhatsApp QR Configuration</CardTitle>
-          </div>
-          <Badge variant="outline" size="sm" className="text-[10px] h-5 px-1.5">
-            Direct Chat
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">
-          Generate a direct wa.me link that launches a WhatsApp chat with your phone number and optional message.
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="pt-6 space-y-5">
-        <Field>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="whatsapp-phone">Phone Number (with Country Code)</FieldLabel>
-            <span className="text-[10px] text-muted-foreground">E.164 (7–15 digits)</span>
-          </div>
+    <FormSection title="Content" tag="WhatsApp">
+      <Field>
+        <FieldLabel htmlFor="whatsapp-phone">Phone number</FieldLabel>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
+          <CountryCodeSelect
+            id="whatsapp-country"
+            aria-label="Country calling code"
+            value={value.country}
+            onChange={(country) => {
+              const nextDial = findCountry(country).dial;
+              updateFields({ ...value, country, phone: sanitizeNationalNumber(nextDial, value.phone) });
+            }}
+          />
           <Input
             id="whatsapp-phone"
             type="tel"
-            placeholder="+1 (555) 019-2834 or 44 7911 123456"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            // Digits are hard-capped by sanitizeNationalNumber; the extra room lets a pasted
+            // "+91 98765 43210" through before it is normalised.
+            maxLength={maxNationalDigits + 8}
+            placeholder="Phone number"
             value={value.phone}
-            onChange={(e) => updateFields(e.target.value, value.message)}
+            onChange={(e) =>
+              updateFields({ ...value, phone: sanitizeNationalNumber(dial, e.target.value) })
+            }
+            onBlur={() => value.phone && setTouched(true)}
             aria-invalid={hasPhoneError}
-            className={hasPhoneError ? 'border-destructive focus-visible:ring-destructive' : ''}
+            aria-describedby={hasPhoneError ? 'whatsapp-phone-error' : 'whatsapp-phone-desc'}
           />
-          <FieldDescription>
-            Include your full international country code without leading zeroes. Note: syntax validation does not verify registration on WhatsApp.
+        </div>
+        {hasPhoneError ? (
+          <FieldError match id="whatsapp-phone-error">{validationResult.error}</FieldError>
+        ) : (
+          <FieldDescription id="whatsapp-phone-desc">
+            Opens a chat with +{dial} followed by this number. We check the format only, not whether the number is on WhatsApp.
           </FieldDescription>
-          {hasPhoneError && <FieldError>{validationResult.error}</FieldError>}
-        </Field>
+        )}
+      </Field>
 
-        <Field>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="whatsapp-message">Pre-filled Message (Optional)</FieldLabel>
-            <span
-              className={`font-mono text-[10px] ${
-                isMessageOverLimit ? 'text-destructive font-bold' : 'text-muted-foreground'
-              }`}
-            >
-              {value.message.length} / 500
-            </span>
-          </div>
-          <Textarea
-            id="whatsapp-message"
-            rows={3}
-            placeholder="Hi! I scanned your QR code and would like to learn more about..."
-            value={value.message}
-            onChange={(e) => updateFields(value.phone, e.target.value)}
-            className="resize-none"
-          />
-          <FieldDescription>
-            This message will be automatically filled into the chat box when the user scans your code.
-          </FieldDescription>
-        </Field>
-      </CardContent>
-    </Card>
+      <Field>
+        <div className="flex w-full items-center justify-between">
+          <FieldLabel htmlFor="whatsapp-message">Pre-filled message (optional)</FieldLabel>
+          <CharCounter length={value.message.length} max={MAX_MESSAGE_LENGTH} />
+        </div>
+        <Textarea
+          id="whatsapp-message"
+          rows={3}
+          maxLength={MAX_MESSAGE_LENGTH}
+          placeholder="Hi! I scanned your QR code and would like to know more."
+          value={value.message}
+          onChange={(e) =>
+            updateFields({ ...value, message: e.target.value.slice(0, MAX_MESSAGE_LENGTH) })
+          }
+          className="resize-none"
+        />
+      </Field>
+    </FormSection>
   );
 }

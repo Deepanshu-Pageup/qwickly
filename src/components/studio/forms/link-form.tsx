@@ -2,15 +2,16 @@
 
 import React from 'react';
 import { linkPayloadSchema } from '@/schemas/qr-payload';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { FormSection } from './form-section';
 
 interface LinkFormProps {
   value: string;
   onChange: (value: string, normalizedOutput: string | null, isValid: boolean) => void;
 }
+
+const MAX_URL_LENGTH = 2048;
 
 export function LinkForm({ value, onChange }: LinkFormProps) {
   const [touched, setTouched] = React.useState(false);
@@ -33,7 +34,7 @@ export function LinkForm({ value, onChange }: LinkFormProps) {
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextVal = e.target.value;
+    const nextVal = e.target.value.slice(0, MAX_URL_LENGTH);
     if (!touched) setTouched(true);
 
     if (!nextVal.trim()) {
@@ -52,53 +53,34 @@ export function LinkForm({ value, onChange }: LinkFormProps) {
   const hasError = touched && !validationResult.success;
 
   return (
-    <Card className="rounded-xl bg-card border-border/80">
-      <CardHeader className="border-b border-border/60 pb-3.5">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            <CardTitle className="text-sm font-semibold">Link QR Configuration</CardTitle>
-          </div>
-          <Badge variant="outline" size="sm" className="font-mono text-[10px] h-5 px-1.5">
-            {value.length}/2048
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">
-          Enter a website destination. URLs without a scheme will automatically use HTTPS.
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="pt-6 space-y-4">
-        <Field className="w-full">
-          <FieldLabel htmlFor="qr-link-input">
-            Destination URL <span className="text-destructive">*</span>
-          </FieldLabel>
-          <Input
-            id="qr-link-input"
-            type="url"
-            placeholder="example.com or https://example.com"
-            value={value}
-            onChange={handleChange}
-            onBlur={() => setTouched(true)}
-            aria-invalid={hasError}
-            aria-describedby={hasError ? 'qr-link-error' : 'qr-link-desc'}
-            className="font-mono text-sm"
-          />
-          {hasError ? (
-            <FieldError id="qr-link-error">{validationResult.error}</FieldError>
-          ) : (
-            <FieldDescription id="qr-link-desc">
-              {validationResult.success && validationResult.normalized ? (
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">
-                  Encodes as: {validationResult.normalized}
-                </span>
-              ) : (
-                'Accepts standard web destinations. Schemes like FTP or JavaScript are rejected.'
-              )}
-            </FieldDescription>
-          )}
-        </Field>
-      </CardContent>
-    </Card>
+    <FormSection title="Content" tag="Link">
+      <Field className="w-full">
+        <FieldLabel htmlFor="qr-link-input">Destination URL</FieldLabel>
+        <Input
+          id="qr-link-input"
+          type="url"
+          maxLength={MAX_URL_LENGTH}
+          placeholder="https://example.com"
+          value={value}
+          onChange={handleChange}
+          onBlur={() => value && setTouched(true)}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? 'qr-link-error' : 'qr-link-desc'}
+        />
+        {hasError ? (
+          <FieldError match id="qr-link-error">{validationResult.error}</FieldError>
+        ) : (
+          <FieldDescription id="qr-link-desc">
+            {validationResult.success && validationResult.normalized ? (
+              <span className="break-all font-mono text-success-foreground">
+                Encodes as {validationResult.normalized}
+              </span>
+            ) : (
+              'Web address people land on when they scan. https:// is added if missing.'
+            )}
+          </FieldDescription>
+        )}
+      </Field>
+    </FormSection>
   );
 }

@@ -196,29 +196,38 @@ describe('Checkpoint 1: Remaining QR Types Payload Schemas & Contracts', () => {
   // 4. Coupon Contract Suite
   // ==========================================================================
   describe('Coupon Payload Schema', () => {
-    it('normalizes coupon code to uppercase and produces deterministic multiline plain text without redeem URL', () => {
+    it('requires a redeem URL: empty or missing is rejected', () => {
+      for (const redeemUrl of [undefined, '', '   ']) {
+        const parsed = couponPayloadSchema.safeParse({
+          code: 'SAVE',
+          description: 'Spring sale',
+          redeemUrl,
+        });
+        assert.equal(parsed.success, false);
+      }
+      const empty = couponPayloadSchema.safeParse({ code: 'SAVE', description: 'Spring sale', redeemUrl: '' });
+      assert.equal(!empty.success && empty.error.issues[0].message, 'Please enter a redeem URL');
+    });
+
+    it('rejects an invalid redeem URL', () => {
+      const parsed = couponPayloadSchema.safeParse({
+        code: 'SAVE',
+        description: 'Spring sale',
+        redeemUrl: 'ftp://shop.example.com',
+      });
+      assert.equal(parsed.success, false);
+    });
+
+    it('normalizes coupon code to uppercase and attaches it to the redeem URL', () => {
       const parsed = couponPayloadSchema.safeParse({
         code: 'save_20-off',
         description: '20% discount on all spring items',
-        terms: 'Valid until May 1st. One per customer.',
+        terms: 'Valid until May 1st.',
+        redeemUrl: 'shop.example.com/checkout',
       });
       assert.equal(parsed.success, true);
       if (parsed.success) {
-        assert.equal(
-          parsed.data,
-          'COUPON: SAVE_20-OFF\nOFFER: 20% discount on all spring items\nTERMS: Valid until May 1st. One per customer.'
-        );
-      }
-    });
-
-    it('omits terms line when terms are empty', () => {
-      const parsed = couponPayloadSchema.safeParse({
-        code: 'WELCOME10',
-        description: '$10 off first order',
-      });
-      assert.equal(parsed.success, true);
-      if (parsed.success) {
-        assert.equal(parsed.data, 'COUPON: WELCOME10\nOFFER: $10 off first order');
+        assert.equal(parsed.data, 'https://shop.example.com/checkout?coupon=SAVE_20-OFF');
       }
     });
 
@@ -250,18 +259,17 @@ describe('Checkpoint 1: Remaining QR Types Payload Schemas & Contracts', () => {
       }
     });
 
-    it('prevents line break injection in description and terms', () => {
+    it('accepts multi-line description and terms without leaking them into the encoded URL', () => {
       const parsed = couponPayloadSchema.safeParse({
         code: 'CLEAN',
         description: 'Line 1\r\nLine 2',
         terms: 'Terms 1\nTerms 2',
+        redeemUrl: 'https://shop.example.com/',
       });
       assert.equal(parsed.success, true);
       if (parsed.success) {
-        const lines = parsed.data.split('\n');
-        assert.equal(lines.length, 3);
-        assert.equal(lines[1], 'OFFER: Line 1 Line 2');
-        assert.equal(lines[2], 'TERMS: Terms 1 Terms 2');
+        assert.equal(parsed.data, 'https://shop.example.com/?coupon=CLEAN');
+        assert.ok(!parsed.data.includes('\n'));
       }
     });
   });

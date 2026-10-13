@@ -2,15 +2,16 @@
 
 import React from 'react';
 import { imagePayloadSchema, hasImageExtension } from '@/schemas/qr-payload';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { FormSection } from './form-section';
 
 interface ImageFormProps {
   value: string;
   onChange: (value: string, encodedOutput: string | null, isValid: boolean) => void;
 }
+
+const MAX_URL_LENGTH = 2048;
 
 export function ImageForm({ value, onChange }: ImageFormProps) {
   const [touched, setTouched] = React.useState(false);
@@ -32,7 +33,7 @@ export function ImageForm({ value, onChange }: ImageFormProps) {
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextVal = e.target.value;
+    const nextVal = e.target.value.slice(0, MAX_URL_LENGTH);
     if (!touched) setTouched(true);
 
     if (!nextVal.trim()) {
@@ -52,56 +53,33 @@ export function ImageForm({ value, onChange }: ImageFormProps) {
   const isMissingExtension = validationResult.success && !hasImageExtension(value);
 
   return (
-    <Card className="rounded-xl bg-card border-border/80">
-      <CardHeader className="border-b border-border/60 pb-3.5">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            <CardTitle className="text-sm font-semibold">Image & Photo QR Configuration</CardTitle>
-          </div>
-          <Badge variant="outline" size="sm" className="text-[10px] h-5 px-1.5">
-            Direct URL Mode
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">
-          Provide a direct, publicly accessible HTTPS web link to an online image, banner, or promotional graphic.
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="pt-6 space-y-5">
-        {/* URL Configuration Notice */}
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3 text-xs text-muted-foreground flex items-start gap-2">
-          <span>
-            Provide an existing public HTTPS link. Client-side validation checks URL format; it does not verify server reachability or file existence.
-          </span>
-        </div>
-
-        <Field>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="image-url">Public Image URL (HTTPS Required)</FieldLabel>
-            <span className="text-[10px] text-muted-foreground">e.g. .png, .jpg, .webp, .svg</span>
-          </div>
-          <Input
-            id="image-url"
-            type="url"
-            placeholder="https://example.com/assets/poster.jpg"
-            value={value}
-            onChange={handleChange}
-            aria-invalid={hasError}
-            className={hasError ? 'border-destructive focus-visible:ring-destructive' : ''}
-          />
-          <FieldDescription>
-            Preserves full query strings, dynamic CDN tokens, and image size parameters.
+    <FormSection title="Content" tag="Image">
+      <Field>
+        <FieldLabel htmlFor="image-url">Image URL</FieldLabel>
+        <Input
+          id="image-url"
+          type="url"
+          maxLength={MAX_URL_LENGTH}
+          placeholder="https://example.com/poster.jpg"
+          value={value}
+          onChange={handleChange}
+          onBlur={() => value && setTouched(true)}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? 'image-url-error' : 'image-url-desc'}
+        />
+        {hasError ? (
+          <FieldError match id="image-url-error">{validationResult.error}</FieldError>
+        ) : (
+          <FieldDescription id="image-url-desc">
+            A public HTTPS link to an image you host. Only the link format is checked, not that the file exists.
           </FieldDescription>
-          {hasError && <FieldError>{validationResult.error}</FieldError>}
-
-          {isMissingExtension && (
-            <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
-              Advisory: URL pathname does not end with a recognized image extension (.png, .jpg, .webp, .svg). Ensure the destination link serves an image asset.
-            </p>
-          )}
-        </Field>
-      </CardContent>
-    </Card>
+        )}
+        {isMissingExtension && (
+          <p className="mt-1.5 text-xs text-warning-foreground">
+            This URL does not end in .png, .jpg, .webp, .svg or .gif. Make sure it serves an image.
+          </p>
+        )}
+      </Field>
+    </FormSection>
   );
 }

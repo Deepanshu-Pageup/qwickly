@@ -2,11 +2,10 @@
 
 import React from 'react';
 import { socialPayloadSchema, SocialPlatform } from '@/schemas/qr-payload';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { FormSection } from './form-section';
+import { OptionGroup } from './option-group';
 
 export interface SocialFormValue {
   platform: SocialPlatform;
@@ -17,6 +16,8 @@ interface SocialFormProps {
   value: SocialFormValue;
   onChange: (value: SocialFormValue, encodedOutput: string | null, isValid: boolean) => void;
 }
+
+const MAX_INPUT_LENGTH = 2048;
 
 const PLATFORMS: Array<{ id: SocialPlatform; label: string; placeholder: string; prefixHint: string }> = [
   { id: 'instagram', label: 'Instagram', placeholder: '@username or profile URL', prefixHint: 'instagram.com/' },
@@ -52,7 +53,7 @@ export function SocialForm({ value, onChange }: SocialFormProps) {
 
   const updateFields = (platform: SocialPlatform, input: string) => {
     if (!touched) setTouched(true);
-    const nextVal = { platform, input };
+    const nextVal = { platform, input: input.slice(0, MAX_INPUT_LENGTH) };
     const result = socialPayloadSchema.safeParse(nextVal);
     if (result.success) {
       onChange(nextVal, result.data, true);
@@ -64,68 +65,42 @@ export function SocialForm({ value, onChange }: SocialFormProps) {
   const hasError = touched && !validationResult.success;
 
   return (
-    <Card className="rounded-xl bg-card border-border/80">
-      <CardHeader className="border-b border-border/60 pb-3.5">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            <CardTitle className="text-sm font-semibold">Social Media QR Configuration</CardTitle>
-          </div>
-          <Badge variant="outline" size="sm" className="text-[10px] h-5 px-1.5">
-            {activePlatform.label}
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">
-          Connect users directly to your social profile, community channel, or link-in-bio hub.
-        </CardDescription>
-      </CardHeader>
+    <FormSection title="Content" tag="Social Media">
+      <Field>
+        <FieldLabel>Platform</FieldLabel>
+        <OptionGroup
+          label="Social platform"
+          value={value.platform}
+          options={PLATFORMS}
+          onChange={(platform) => updateFields(platform, value.input)}
+        />
+      </Field>
 
-      <CardContent className="pt-6 space-y-5">
-        <Field>
-          <FieldLabel>Select Platform</FieldLabel>
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {PLATFORMS.map((p) => {
-              const isSelected = value.platform === p.id;
-              return (
-                <Button
-                  key={p.id}
-                  type="button"
-                  size="sm"
-                  variant={isSelected ? 'default' : 'outline'}
-                  onClick={() => updateFields(p.id, value.input)}
-                  className="text-xs"
-                >
-                  {p.label}
-                </Button>
-              );
-            })}
-          </div>
-        </Field>
-
-        <Field>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="social-input">
-              {value.platform === 'custom' ? 'Direct Profile / Hub URL' : `${activePlatform.label} Handle or URL`}
-            </FieldLabel>
-            <span className="text-[10px] text-muted-foreground">{activePlatform.prefixHint}</span>
-          </div>
-          <Input
-            id="social-input"
-            type="text"
-            placeholder={activePlatform.placeholder}
-            value={value.input}
-            onChange={(e) => updateFields(value.platform, e.target.value)}
-            aria-invalid={hasError}
-            className={hasError ? 'border-destructive focus-visible:ring-destructive' : ''}
-          />
-          <FieldDescription>
+      <Field>
+        <FieldLabel htmlFor="social-input">
+          {value.platform === 'custom' ? 'Profile URL' : `${activePlatform.label} handle or URL`}
+        </FieldLabel>
+        <Input
+          id="social-input"
+          type="text"
+          maxLength={MAX_INPUT_LENGTH}
+          placeholder={activePlatform.placeholder}
+          value={value.input}
+          onChange={(e) => updateFields(value.platform, e.target.value)}
+          onBlur={() => value.input && setTouched(true)}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? 'social-input-error' : 'social-input-desc'}
+        />
+        {hasError ? (
+          <FieldError match id="social-input-error">{validationResult.error}</FieldError>
+        ) : (
+          <FieldDescription id="social-input-desc">
             {value.platform === 'custom'
-              ? 'Enter any valid HTTP or HTTPS link-in-bio or portfolio page URL.'
-              : `Enter your ${activePlatform.label} username (with or without @) or paste a direct profile link.`}
+              ? 'Any HTTP or HTTPS link-in-bio or portfolio page.'
+              : `Username (with or without @) or a full link, for example ${activePlatform.prefixHint}`}
           </FieldDescription>
-          {hasError && <FieldError>{validationResult.error}</FieldError>}
-        </Field>
-      </CardContent>
-    </Card>
+        )}
+      </Field>
+    </FormSection>
   );
 }
