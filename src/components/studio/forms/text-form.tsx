@@ -2,15 +2,16 @@
 
 import React from 'react';
 import { textPayloadSchema } from '@/schemas/qr-payload';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { FormSection, CharCounter } from './form-section';
 
 interface TextFormProps {
   value: string;
   onChange: (value: string, preservedOutput: string | null, isValid: boolean) => void;
 }
+
+const MAX_TEXT_LENGTH = 1000;
 
 export function TextForm({ value, onChange }: TextFormProps) {
   const [touched, setTouched] = React.useState(false);
@@ -31,7 +32,7 @@ export function TextForm({ value, onChange }: TextFormProps) {
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const nextVal = e.target.value;
+    const nextVal = e.target.value.slice(0, MAX_TEXT_LENGTH);
     if (!touched) setTouched(true);
 
     const result = textPayloadSchema.safeParse(nextVal);
@@ -44,54 +45,34 @@ export function TextForm({ value, onChange }: TextFormProps) {
   };
 
   const hasError = touched && !validationResult.success;
-  const isOverLimit = value.length > 1000;
 
   return (
-    <Card className="rounded-xl bg-card border-border/80">
-      <CardHeader className="border-b border-border/60 pb-3.5">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            <CardTitle className="text-sm font-semibold">Text QR Configuration</CardTitle>
-          </div>
-          <Badge
-            variant={isOverLimit ? 'destructive' : 'outline'}
-            size="sm"
-            className="font-mono text-[10px] h-5 px-1.5"
-          >
-            {value.length}/1000
-          </Badge>
+    <FormSection title="Content" tag="Text">
+      <Field className="w-full">
+        <div className="flex w-full items-center justify-between">
+          <FieldLabel htmlFor="qr-text-input">Text</FieldLabel>
+          <CharCounter length={value.length} max={MAX_TEXT_LENGTH} />
         </div>
-        <CardDescription className="text-xs">
-          Enter plain text, notes, or messages. Line breaks and whitespace are preserved exactly.
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="pt-6 space-y-4">
-        <Field className="w-full">
-          <FieldLabel htmlFor="qr-text-input">
-            Content Text <span className="text-destructive">*</span>
-          </FieldLabel>
-          <Textarea
-            id="qr-text-input"
-            rows={5}
-            placeholder="Type or paste plain text here..."
-            value={value}
-            onChange={handleChange}
-            onBlur={() => setTouched(true)}
-            aria-invalid={hasError}
-            aria-describedby={hasError ? 'qr-text-error' : 'qr-text-desc'}
-            className="font-sans text-sm resize-y"
-          />
-          {hasError ? (
-            <FieldError id="qr-text-error">{validationResult.error}</FieldError>
-          ) : (
-            <FieldDescription id="qr-text-desc">
-              Whitespace and line breaks are retained. The 1000 character limit is a product constraint for reliable preview.
-            </FieldDescription>
-          )}
-        </Field>
-      </CardContent>
-    </Card>
+        <Textarea
+          id="qr-text-input"
+          rows={5}
+          maxLength={MAX_TEXT_LENGTH}
+          placeholder="Type or paste plain text"
+          value={value}
+          onChange={handleChange}
+          onBlur={() => value && setTouched(true)}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? 'qr-text-error' : 'qr-text-desc'}
+          className="resize-y"
+        />
+        {hasError ? (
+          <FieldError match id="qr-text-error">{validationResult.error}</FieldError>
+        ) : (
+          <FieldDescription id="qr-text-desc">
+            Line breaks and spaces are kept exactly as typed.
+          </FieldDescription>
+        )}
+      </Field>
+    </FormSection>
   );
 }

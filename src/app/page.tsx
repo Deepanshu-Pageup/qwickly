@@ -14,6 +14,7 @@ import { CouponForm, CouponFormValue } from '@/components/studio/forms/coupon-fo
 import { AppForm, AppFormValue } from '@/components/studio/forms/app-form';
 import { PdfForm } from '@/components/studio/forms/pdf-form';
 import { ImageForm } from '@/components/studio/forms/image-form';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { QrPreviewCanvas } from '@/components/studio/qr-preview-canvas';
 import { QrDesignSettings, ErrorCorrectionLevel } from '@/schemas/qr-design';
 
@@ -40,7 +41,7 @@ export default function Home() {
   });
 
   const [whatsappState, setWhatsappState] = useState<FormState<WhatsAppFormValue>>({
-    raw: { phone: '', message: '' },
+    raw: { country: 'US', phone: '', message: '' },
     encoded: null,
     isValid: false,
   });
@@ -132,38 +133,35 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
-      {/* Studio Header */}
-      <header className="border-b border-border/80 bg-background/80 backdrop-blur-md sticky top-0 z-30 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      {/* Compact header: PageUp-style navy navbar (same in light and dark themes) */}
+      <header className="site-navbar sticky top-0 z-30 border-b">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold text-xs shadow-xs">
+            <div
+              aria-hidden="true"
+              className="flex size-7 items-center justify-center rounded-md bg-[#4457e1] text-xs font-semibold text-white"
+            >
               Q
             </div>
             <div className="flex items-baseline gap-2">
-              <h1 className="text-sm font-semibold tracking-tight text-foreground">
-                Qwikly Studio
-              </h1>
-              <span className="text-xs text-muted-foreground hidden sm:inline">
-                Vector QR Code Generator
-              </span>
+              <h1 className="text-sm font-semibold tracking-tight text-white">Qwikly Studio</h1>
+              <span className="hidden text-xs text-[#e5e8ed]/70 sm:inline">QR Code Generator</span>
             </div>
           </div>
+          <ThemeToggle className="text-[#e5e8ed] hover:bg-white/10 hover:text-white" />
         </div>
       </header>
 
-      {/* Main Studio Workstation Layout */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Type Selection & Configuration Area */}
-          <div className="lg:col-span-7 space-y-6">
-            <section aria-label="Type Selection">
-              <QrTypeSelector
-                selectedType={selectedType}
-                onSelectType={setSelectedType}
-              />
+      {/* Centered workspace: ~60/40 settings-to-preview split on wide screens */}
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[3fr_2fr] lg:gap-10">
+          {/* Left column: type, content, appearance (DOM order = mobile order) */}
+          <div className="min-w-0 space-y-8">
+            <section aria-label="QR type">
+              <QrTypeSelector selectedType={selectedType} onSelectType={setSelectedType} />
             </section>
 
-            <section aria-label="Payload Configuration">
+            <section aria-label="Content" className="border-t border-border pt-6">
               {selectedType === 'link' && (
                 <LinkForm
                   value={linkState.raw}
@@ -238,7 +236,7 @@ export default function Home() {
               )}
             </section>
 
-            <section aria-label="Design Customization">
+            <section aria-label="Appearance" className="border-t border-border pt-6">
               <DesignCustomizationPanel
                 settings={designSettings}
                 onChange={setDesignSettings}
@@ -248,9 +246,9 @@ export default function Home() {
             </section>
           </div>
 
-          {/* Right Column: Live Inspector, Preview & Export Area */}
-          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-            <section aria-label="Live Preview">
+          {/* Right column: preview and export stay together; sticky on wide screens */}
+          <div className="min-w-0 space-y-5 lg:sticky lg:top-20 lg:border-s lg:border-border lg:ps-10">
+            <section aria-label="Preview">
               <QrPreviewCanvas
                 selectedType={selectedType}
                 encodedValue={activePreviewState.encodedValue}
@@ -259,7 +257,7 @@ export default function Home() {
               />
             </section>
 
-            <section aria-label="Export Actions">
+            <section aria-label="Export">
               <ExportActions
                 encodedValue={activePreviewState.encodedValue}
                 isValid={activePreviewState.isValid}
@@ -269,6 +267,10 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+        Powered By © Pageup Software Services Pvt. Ltd.
+      </footer>
     </div>
   );
 }

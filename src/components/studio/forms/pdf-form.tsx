@@ -2,15 +2,16 @@
 
 import React from 'react';
 import { pdfPayloadSchema, hasPdfExtension } from '@/schemas/qr-payload';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { FormSection } from './form-section';
 
 interface PdfFormProps {
   value: string;
   onChange: (value: string, encodedOutput: string | null, isValid: boolean) => void;
 }
+
+const MAX_URL_LENGTH = 2048;
 
 export function PdfForm({ value, onChange }: PdfFormProps) {
   const [touched, setTouched] = React.useState(false);
@@ -32,7 +33,7 @@ export function PdfForm({ value, onChange }: PdfFormProps) {
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextVal = e.target.value;
+    const nextVal = e.target.value.slice(0, MAX_URL_LENGTH);
     if (!touched) setTouched(true);
 
     if (!nextVal.trim()) {
@@ -52,56 +53,33 @@ export function PdfForm({ value, onChange }: PdfFormProps) {
   const isMissingExtension = validationResult.success && !hasPdfExtension(value);
 
   return (
-    <Card className="rounded-xl bg-card border-border/80">
-      <CardHeader className="border-b border-border/60 pb-3.5">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            <CardTitle className="text-sm font-semibold">PDF Document QR Configuration</CardTitle>
-          </div>
-          <Badge variant="outline" size="sm" className="text-[10px] h-5 px-1.5">
-            Direct URL Mode
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">
-          Provide a direct, publicly accessible HTTPS web link to your online PDF menu, flyer, or manual.
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="pt-6 space-y-5">
-        {/* URL Configuration Notice */}
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3 text-xs text-muted-foreground flex items-start gap-2">
-          <span>
-            Provide an existing public HTTPS link. Client-side validation checks URL format; it does not verify server reachability or file existence.
-          </span>
-        </div>
-
-        <Field>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="pdf-url">Public PDF URL (HTTPS Required)</FieldLabel>
-            <span className="text-[10px] text-muted-foreground">e.g. .pdf extension</span>
-          </div>
-          <Input
-            id="pdf-url"
-            type="url"
-            placeholder="https://example.com/assets/menu.pdf"
-            value={value}
-            onChange={handleChange}
-            aria-invalid={hasError}
-            className={hasError ? 'border-destructive focus-visible:ring-destructive' : ''}
-          />
-          <FieldDescription>
-            Preserves full query strings, authentication tokens, and hash parameters.
+    <FormSection title="Content" tag="PDF">
+      <Field>
+        <FieldLabel htmlFor="pdf-url">PDF URL</FieldLabel>
+        <Input
+          id="pdf-url"
+          type="url"
+          maxLength={MAX_URL_LENGTH}
+          placeholder="https://example.com/menu.pdf"
+          value={value}
+          onChange={handleChange}
+          onBlur={() => value && setTouched(true)}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? 'pdf-url-error' : 'pdf-url-desc'}
+        />
+        {hasError ? (
+          <FieldError match id="pdf-url-error">{validationResult.error}</FieldError>
+        ) : (
+          <FieldDescription id="pdf-url-desc">
+            A public HTTPS link to a PDF you host. Only the link format is checked, not that the file exists.
           </FieldDescription>
-          {hasError && <FieldError>{validationResult.error}</FieldError>}
-
-          {isMissingExtension && (
-            <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
-              Advisory: URL pathname does not end with .pdf. Ensure the target web server serves a direct document or accessible viewer.
-            </p>
-          )}
-        </Field>
-      </CardContent>
-    </Card>
+        )}
+        {isMissingExtension && (
+          <p className="mt-1.5 text-xs text-warning-foreground">
+            This URL does not end in .pdf. Make sure it opens the document directly.
+          </p>
+        )}
+      </Field>
+    </FormSection>
   );
 }

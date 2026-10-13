@@ -2,11 +2,10 @@
 
 import React from 'react';
 import { couponPayloadSchema, CouponPayloadInput } from '@/schemas/qr-payload';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { FormSection, CharCounter } from './form-section';
 
 export interface CouponFormValue {
   code: string;
@@ -20,6 +19,11 @@ interface CouponFormProps {
   onChange: (value: CouponFormValue, encodedOutput: string | null, isValid: boolean) => void;
 }
 
+const MAX_CODE_LENGTH = 32;
+const MAX_DESCRIPTION_LENGTH = 100;
+const MAX_TERMS_LENGTH = 200;
+const MAX_URL_LENGTH = 2048;
+
 export function CouponForm({ value, onChange }: CouponFormProps) {
   const [touched, setTouched] = React.useState(false);
 
@@ -29,6 +33,9 @@ export function CouponForm({ value, onChange }: CouponFormProps) {
     }
     if (!value.description.trim()) {
       return { success: false as const, error: 'Please enter an offer description' };
+    }
+    if (!value.redeemUrl.trim()) {
+      return { success: false as const, error: 'Please enter a redeem URL' };
     }
 
     const payloadInput: CouponPayloadInput = {
@@ -62,98 +69,82 @@ export function CouponForm({ value, onChange }: CouponFormProps) {
   const hasError = touched && !validationResult.success;
 
   return (
-    <Card className="rounded-xl bg-card border-border/80">
-      <CardHeader className="border-b border-border/60 pb-3.5">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            <CardTitle className="text-sm font-semibold">Coupon & Promo QR Configuration</CardTitle>
-          </div>
-          <Badge variant="outline" size="sm" className="text-[10px] h-5 px-1.5">
-            {value.redeemUrl ? 'Online Checkout' : 'Text Card'}
-          </Badge>
+    <FormSection title="Content" tag="Coupon">
+      <Field>
+        <FieldLabel htmlFor="coupon-code">Coupon code</FieldLabel>
+        <Input
+          id="coupon-code"
+          type="text"
+          maxLength={MAX_CODE_LENGTH}
+          placeholder="SUMMER50"
+          value={value.code}
+          onChange={(e) =>
+            updateFields({ ...value, code: e.target.value.toUpperCase().slice(0, MAX_CODE_LENGTH) })
+          }
+          aria-invalid={hasError && !value.code.trim()}
+          className="font-mono uppercase"
+        />
+        <FieldDescription>Letters, numbers, hyphens and underscores.</FieldDescription>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="coupon-desc">Offer description</FieldLabel>
+        <Input
+          id="coupon-desc"
+          type="text"
+          maxLength={MAX_DESCRIPTION_LENGTH}
+          placeholder="50% off the entire summer catalog"
+          value={value.description}
+          onChange={(e) =>
+            updateFields({ ...value, description: e.target.value.slice(0, MAX_DESCRIPTION_LENGTH) })
+          }
+          aria-invalid={hasError && !value.description.trim()}
+        />
+      </Field>
+
+      <Field>
+        <div className="flex w-full items-center justify-between">
+          <FieldLabel htmlFor="coupon-terms">Terms and expiry (optional)</FieldLabel>
+          <CharCounter length={value.terms.length} max={MAX_TERMS_LENGTH} />
         </div>
-        <CardDescription className="text-xs">
-          Distribute promo discounts. If a redeem URL is supplied, the code is passed as a URL parameter; otherwise, a formatted coupon text card is generated.
-        </CardDescription>
-      </CardHeader>
+        <Textarea
+          id="coupon-terms"
+          rows={2}
+          maxLength={MAX_TERMS_LENGTH}
+          placeholder="Valid until August 31. One per customer."
+          value={value.terms}
+          onChange={(e) =>
+            updateFields({ ...value, terms: e.target.value.slice(0, MAX_TERMS_LENGTH) })
+          }
+          className="resize-none"
+        />
+      </Field>
 
-      <CardContent className="pt-6 space-y-5">
-        <Field>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="coupon-code">Coupon Code (Required)</FieldLabel>
-            <span className="text-[10px] text-muted-foreground font-mono">{value.code.length} / 32</span>
-          </div>
-          <Input
-            id="coupon-code"
-            type="text"
-            placeholder="e.g. SUMMER50 or FLASH_SALE_2026"
-            value={value.code}
-            onChange={(e) => updateFields({ ...value, code: e.target.value.toUpperCase() })}
-            aria-invalid={hasError && !value.code.trim()}
-            className="uppercase font-mono"
-          />
-          <FieldDescription>
-            Uppercase alphanumeric characters, hyphens, and underscores only.
-          </FieldDescription>
-        </Field>
+      <Field>
+        <FieldLabel htmlFor="coupon-url">Redeem URL</FieldLabel>
+        <Input
+          id="coupon-url"
+          type="url"
+          maxLength={MAX_URL_LENGTH}
+          placeholder="https://shop.example.com/checkout"
+          value={value.redeemUrl}
+          onChange={(e) =>
+            updateFields({ ...value, redeemUrl: e.target.value.slice(0, MAX_URL_LENGTH) })
+          }
+          required
+          aria-required="true"
+          aria-invalid={hasError && !value.redeemUrl.trim()}
+        />
+        <FieldDescription>
+          Required. The code is added to this link as <code className="font-mono">?coupon={value.code || 'CODE'}</code>.
+        </FieldDescription>
+      </Field>
 
-        <Field>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="coupon-desc">Offer Description (Required)</FieldLabel>
-            <span className="text-[10px] text-muted-foreground">{value.description.length} / 100</span>
-          </div>
-          <Input
-            id="coupon-desc"
-            type="text"
-            placeholder="e.g. 50% discount on entire summer catalog"
-            value={value.description}
-            onChange={(e) => updateFields({ ...value, description: e.target.value })}
-            aria-invalid={hasError && !value.description.trim()}
-          />
-          <FieldDescription>
-            Briefly describe the promotion or discount for customers.
-          </FieldDescription>
-        </Field>
-
-        <Field>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="coupon-terms">Terms & Expiration (Optional)</FieldLabel>
-            <span className="text-[10px] text-muted-foreground">{value.terms.length} / 200</span>
-          </div>
-          <Textarea
-            id="coupon-terms"
-            rows={2}
-            placeholder="e.g. Valid until August 31, 2026. Limit 1 per customer. Cannot combine with other offers."
-            value={value.terms}
-            onChange={(e) => updateFields({ ...value, terms: e.target.value })}
-            className="resize-none"
-          />
-          <FieldDescription>
-            Optional terms, restrictions, or expiry dates.
-          </FieldDescription>
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="coupon-url">Redeem URL (Optional)</FieldLabel>
-          <Input
-            id="coupon-url"
-            type="url"
-            placeholder="https://shop.example.com/checkout"
-            value={value.redeemUrl}
-            onChange={(e) => updateFields({ ...value, redeemUrl: e.target.value })}
-          />
-          <FieldDescription>
-            Optional link to your online checkout. If provided, the code will be attached as <code className="text-[11px] font-mono">?coupon={value.code || 'CODE'}</code>.
-          </FieldDescription>
-        </Field>
-
-        {hasError && (
-          <p className="text-destructive text-xs font-medium" role="alert">
-            {validationResult.error}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      {hasError && (
+        <p className="text-xs font-medium text-destructive-foreground" role="alert">
+          {validationResult.error}
+        </p>
+      )}
+    </FormSection>
   );
 }
