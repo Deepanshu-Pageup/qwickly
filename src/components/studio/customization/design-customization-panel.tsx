@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   QrDesignSettings,
   ErrorCorrectionLevel,
@@ -62,6 +62,14 @@ export function DesignCustomizationPanel({
   const contrast = evaluateContrast(settings.fgColor, settings.bgColor);
   const isLogoActive = Boolean(settings.logo?.src);
 
+  // Local URL input state to allow uninterrupted typing while editing
+  const [localUrl, setLocalUrl] = useState<string>('');
+  const [urlStatus, setUrlStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
+  const [urlErrorMessage, setUrlErrorMessage] = useState<string | null>(null);
+
+  // Derive active display value
+  const activeUrlDisplay = localUrl || (settings.logo?.src && !settings.logo.src.startsWith('data:') ? settings.logo.src : '');
+
   const handleFgPreset = (hex: string) => {
     onChange({ ...settings, fgColor: hex });
   };
@@ -113,11 +121,51 @@ export function DesignCustomizationPanel({
   };
 
   const handleClearLogo = () => {
+    setLocalUrl('');
+    setUrlStatus('idle');
+    setUrlErrorMessage(null);
     onChange({
       ...settings,
       level: savedLevelBeforeLogo, // Restore previously selected error correction
       logo: null,
     });
+  };
+
+  const validateAndApplyUrl = (inputUrl: string) => {
+    const trimmed = inputUrl.trim();
+    if (!trimmed) {
+      handleClearLogo();
+      return;
+    }
+
+    // Check protocol validity (must be http://, https://, or data: URL)
+    if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith('data:')) {
+      setUrlStatus('invalid');
+      setUrlErrorMessage('URL must begin with http:// or https://');
+      return;
+    }
+
+    setUrlStatus('validating');
+    setUrlErrorMessage(null);
+
+    // Verify image loadability in browser
+    if (typeof window !== 'undefined') {
+      const testImg = new Image();
+      testImg.onload = () => {
+        setUrlStatus('valid');
+        setUrlErrorMessage(null);
+        handleLogoSelect(trimmed);
+      };
+      testImg.onerror = () => {
+        setUrlStatus('invalid');
+        setUrlErrorMessage(
+          'Unable to load image. Verify URL accessibility, CORS policy, or file format.'
+        );
+      };
+      testImg.src = trimmed;
+    } else {
+      handleLogoSelect(trimmed);
+    }
   };
 
   return (
@@ -311,17 +359,46 @@ export function DesignCustomizationPanel({
           </div>
 
           <Field>
-            <Input
-              type="url"
-              placeholder="Or paste an image URL (e.g. https://example.com/logo.png)"
-              value={settings.logo?.src && !settings.logo.src.startsWith('data:') ? settings.logo.src : ''}
-              onChange={(e) => {
-                const val = e.target.value.trim();
-                if (val) handleLogoSelect(val);
-                else handleClearLogo();
-              }}
-              className="text-xs"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                type="url"
+                placeholder="Paste an image URL (e.g. https://example.com/logo.png)"
+                value={activeUrlDisplay}
+                onChange={(e) => {
+                  setLocalUrl(e.target.value);
+                  setUrlStatus('idle');
+                  setUrlErrorMessage(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    validateAndApplyUrl(e.currentTarget.value);
+                  }
+                }}
+                className="text-xs"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={!activeUrlDisplay.trim() || urlStatus === 'validating'}
+                loading={urlStatus === 'validating'}
+                onClick={() => validateAndApplyUrl(activeUrlDisplay)}
+                className="text-xs shrink-0"
+              >
+                Apply
+              </Button>
+            </div>
+            {urlErrorMessage && (
+              <p className="text-[11px] text-destructive mt-1 font-medium">
+                {urlErrorMessage}
+              </p>
+            )}
+            {urlStatus === 'valid' && (
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
+                ✓ Logo loaded and applied to QR preview.
+              </p>
+            )}
             <FieldDescription>
               External image URLs must allow cross-origin access (CORS). Built-in presets render reliably offline.
             </FieldDescription>

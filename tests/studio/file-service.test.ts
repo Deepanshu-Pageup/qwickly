@@ -65,10 +65,29 @@ describe('Sub-phase 2.7: File Service & Export Suite', () => {
       const svg = fileService.generateSvgString('https://example.com/logo', design, 1000);
       assert.ok(svg.includes('<image '));
       assert.ok(svg.includes('href="data:image/svg+xml;utf8,&lt;svg&gt;&lt;/svg&gt;"'));
+      assert.ok(svg.includes('xlink:href="data:image/svg+xml;utf8,&lt;svg&gt;&lt;/svg&gt;"'));
       // In SVG viewBox units, height and width are scaled to viewBox modules
       assert.ok(svg.includes('preserveAspectRatio="none"'));
       assert.ok(/height="[0-9.]+"/.test(svg));
       assert.ok(/width="[0-9.]+"/.test(svg));
+    });
+
+    it('embeds external PNG URL with both href and xlink:href attributes', () => {
+      const design: QrDesignSettings = {
+        fgColor: '#000000',
+        bgColor: '#ffffff',
+        level: 'M',
+        marginSize: 4,
+        logo: {
+          src: 'https://example.com/brand-logo.png',
+          sizeRatio: 0.18,
+          excavate: true,
+        },
+      };
+
+      const svg = fileService.generateSvgString('https://example.com/png-test', design, 512);
+      assert.ok(svg.includes('href="https://example.com/brand-logo.png"'));
+      assert.ok(svg.includes('xlink:href="https://example.com/brand-logo.png"'));
     });
   });
 

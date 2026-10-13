@@ -82,6 +82,10 @@ export class FileService {
           .replace(/>/g, '&gt;');
 
         attrs += ` ${attrName}="${escapedVal}"`;
+        // In SVG 1.1/standard viewers, xlink:href is required for <image> tags
+        if (key === 'href') {
+          attrs += ` xlink:href="${escapedVal}"`;
+        }
       }
     }
 
@@ -134,7 +138,7 @@ export class FileService {
       };
     }
 
-    // Ensure React dispatcher internals for hook evaluation in test / server runners
+    // Ensure React dispatcher internals for hook evaluation in test / server / client runners
     const reactAny = React as unknown as {
       __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE?: {
         H: unknown;
@@ -148,29 +152,40 @@ export class FileService {
       reactAny.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE ||
       reactAny.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 
-    if (internals && !internals.H) {
+    const previousH = internals ? internals.H : null;
+
+    if (internals) {
       internals.H = {
         useMemo: (fn: () => unknown) => fn(),
         useRef: (v: unknown) => ({ current: v }),
         useCallback: (fn: (...args: unknown[]) => unknown) => fn,
+        useState: (v: unknown) => [v, () => {}],
+        useEffect: () => {},
+        useLayoutEffect: () => {},
       };
     }
 
-    // Directly evaluate QRCodeSVG render method
-    const qrElementTree = (
-      QRCodeSVG as unknown as ForwardRefQRCodeSVG
-    ).render(
-      {
-        value,
-        size: targetSize,
-        level: effectiveLevel,
-        marginSize: effectiveMargin,
-        bgColor,
-        fgColor,
-        imageSettings,
-      },
-      null
-    );
+    let qrElementTree: SvgElementTree;
+    try {
+      qrElementTree = (
+        QRCodeSVG as unknown as ForwardRefQRCodeSVG
+      ).render(
+        {
+          value,
+          size: targetSize,
+          level: effectiveLevel,
+          marginSize: effectiveMargin,
+          bgColor,
+          fgColor,
+          imageSettings,
+        },
+        null
+      );
+    } finally {
+      if (internals) {
+        internals.H = previousH;
+      }
+    }
 
     let svgMarkup = this.serializeElementToXml(qrElementTree);
 
