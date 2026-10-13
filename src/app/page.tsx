@@ -4,9 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { QrType } from '@/types/qr';
 import { QrTypeSelector } from '@/components/studio/qr-type-selector';
 import { DesignCustomizationPanel } from '@/components/studio/customization/design-customization-panel';
-import {
-  ExportActionsPlaceholder,
-} from '@/components/studio/studio-placeholders';
+import { ExportActions } from '@/components/studio/export-actions';
 import { LinkForm } from '@/components/studio/forms/link-form';
 import { TextForm } from '@/components/studio/forms/text-form';
 import { WhatsAppForm, WhatsAppFormValue } from '@/components/studio/forms/whatsapp-form';
@@ -262,7 +260,11 @@ export default function Home() {
             </section>
 
             <section aria-label="Export Actions">
-              <ExportActionsPlaceholder />
+              <ExportActions
+                encodedValue={activePreviewState.encodedValue}
+                isValid={activePreviewState.isValid}
+                designSettings={designSettings}
+              />
             </section>
           </div>
         </div>
