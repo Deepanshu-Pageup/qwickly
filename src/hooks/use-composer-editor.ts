@@ -125,15 +125,20 @@ export function useComposerEditor({
   const [query, setQuery] = useState<ActiveQuery | null>(null);
   const [tokenHosts, setTokenHosts] = useState<HTMLSpanElement[]>([]);
   const [, forceReconcile] = useState(0);
-  const trigger = triggers.find((item) => item.character === query?.character);
+  const activeQuery =
+    query &&
+    (disabled || readOnly || !triggers.some((item) => item.character === query.character))
+      ? null
+      : query;
+  const trigger = triggers.find((item) => item.character === activeQuery?.character);
   const { contains } = useComposerFilter();
-  const options = getFilteredItems(trigger, query, contains);
+  const options = getFilteredItems(trigger, activeQuery, contains);
   const open =
     !isTextarea &&
     !isComposing &&
     !disabled &&
     !readOnly &&
-    Boolean(query) &&
+    Boolean(activeQuery) &&
     hasVisibleItems(trigger, options);
   const isEmpty = !getComposerText(value);
   const canSubmit =
@@ -143,9 +148,11 @@ export function useComposerEditor({
     !submitDisabled &&
     (allowEmpty || Boolean(getComposerText(value).trim()));
   const onQueryChangeRef = useRef(onQueryChange);
-  onQueryChangeRef.current = onQueryChange;
-  const queryCharacter = query?.character;
-  const queryText = query?.text;
+  useEffect(() => {
+    onQueryChangeRef.current = onQueryChange;
+  }, [onQueryChange]);
+  const queryCharacter = activeQuery?.character;
+  const queryText = activeQuery?.text;
 
   const syncTokenHosts = useCallback((input: HTMLDivElement): void => {
     const next = Array.from(
@@ -168,16 +175,6 @@ export function useComposerEditor({
         : null,
     );
   }, [queryCharacter, queryText]);
-
-  useEffect(() => {
-    if (
-      query &&
-      (disabled ||
-        readOnly ||
-        !triggers.some((item) => item.character === query.character))
-    )
-      setQuery(null);
-  }, [disabled, readOnly, query, triggers]);
 
   useEffect(() => {
     const input = inputElement;
@@ -252,9 +249,9 @@ export function useComposerEditor({
       input.disabled = disabled;
       input.readOnly = readOnly;
     }
-  });
+  }, [disabled, readOnly, syncTokenHosts, value]);
 
-  const updateQuery = (): void => {
+  const updateQuery = useCallback((): void => {
     const input = inputRef.current;
     const next =
       input &&
@@ -274,14 +271,16 @@ export function useComposerEditor({
         ? previous
         : active,
     );
-  };
+  }, [disabled, readOnly, triggers]);
 
-  queryAction.current = updateQuery;
+  useEffect(() => {
+    queryAction.current = updateQuery;
+  }, [updateQuery]);
 
-  const dismissSuggestions = (): void => {
+  const dismissSuggestions = useCallback((): void => {
     dismissedQuery.current = query?.key ?? null;
     setQuery(null);
-  };
+  }, [query]);
 
   const publish = (reason: ComposerChangeDetails["reason"] = "input"): void => {
     const input = inputRef.current;
@@ -376,34 +375,36 @@ export function useComposerEditor({
     lastSelection.current = readSelection(input);
   };
 
-  historyAction.current = (direction) => {
-    const input = inputRef.current;
-    if (
-      !input ||
-      input instanceof HTMLTextAreaElement ||
-      disabled ||
-      readOnly ||
-      composing.current
-    )
-      return;
-    const state = history.current;
-    const source = direction === "undo" ? state.past : state.future;
-    const destination = direction === "undo" ? state.future : state.past;
-    const snapshot = source.pop();
-    if (!snapshot) return;
-    destination.push({
-      value: readValue(input),
-      selection: readSelection(input),
-    });
-    state.current = snapshot;
-    state.inputType = "";
-    writeValue(input, snapshot.value);
-    restoreSelection(input, snapshot.selection);
-    onValueChange(snapshot.value, { reason: "history" });
-    forceReconcile((revision) => revision + 1);
-    syncTokenHosts(input);
-    dismissSuggestions();
-  };
+  useEffect(() => {
+    historyAction.current = (direction) => {
+      const input = inputRef.current;
+      if (
+        !input ||
+        input instanceof HTMLTextAreaElement ||
+        disabled ||
+        readOnly ||
+        composing.current
+      )
+        return;
+      const state = history.current;
+      const source = direction === "undo" ? state.past : state.future;
+      const destination = direction === "undo" ? state.future : state.past;
+      const snapshot = source.pop();
+      if (!snapshot) return;
+      destination.push({
+        value: readValue(input),
+        selection: readSelection(input),
+      });
+      state.current = snapshot;
+      state.inputType = "";
+      writeValue(input, snapshot.value);
+      restoreSelection(input, snapshot.selection);
+      onValueChange(snapshot.value, { reason: "history" });
+      forceReconcile((revision) => revision + 1);
+      syncTokenHosts(input);
+      dismissSuggestions();
+    };
+  }, [disabled, dismissSuggestions, onValueChange, readOnly, syncTokenHosts]);
 
   const performSubmit = (): void => {
     if (!canSubmit || composing.current) return;
