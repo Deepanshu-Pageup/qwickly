@@ -70,7 +70,7 @@ export function QrPreviewCanvas({
             variant={isValid ? 'success' : 'secondary'}
             size="sm"
           >
-            {isValid ? 'Ready to Scan' : 'Awaiting Input'}
+            {isValid ? 'Payload Valid' : 'Awaiting Input'}
           </Badge>
         </div>
       </div>
