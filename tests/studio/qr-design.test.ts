@@ -69,6 +69,7 @@ describe('Checkpoint 3: QR Design Customization & Preview Integration Suite', ()
       const evaluation = evaluateContrast('#000000', '#ffffff');
       assert.equal(evaluation.isLowContrast, false);
       assert.equal(evaluation.isInverted, false);
+      assert.equal(evaluation.isDownloadAllowed, true);
       assert.equal(evaluation.warningMessage, null);
     });
 
@@ -76,6 +77,7 @@ describe('Checkpoint 3: QR Design Customization & Preview Integration Suite', ()
       // Light gray (#a0a0a0) on white (#ffffff)
       const evaluation = evaluateContrast('#a0a0a0', '#ffffff');
       assert.equal(evaluation.isLowContrast, true);
+      assert.equal(evaluation.isDownloadAllowed, false);
       assert.ok(evaluation.ratio < 4.5);
       assert.ok(evaluation.warningMessage?.includes('below the recommended 4.5:1 advisory threshold'));
     });
@@ -84,13 +86,15 @@ describe('Checkpoint 3: QR Design Customization & Preview Integration Suite', ()
       // White (#ffffff) on black (#000000)
       const evaluation = evaluateContrast('#ffffff', '#000000');
       assert.equal(evaluation.isInverted, true);
+      assert.equal(evaluation.isDownloadAllowed, false);
       assert.ok(evaluation.warningMessage?.includes('Inverted color scheme detected'));
     });
 
-    it('confirms contrast threshold is purely an advisory heuristic and does not block rendering', () => {
+    it('confirms contrast threshold does not block pure evaluation but disallows download', () => {
       // Even with low contrast, evaluation still returns valid numbers without throwing
       const evaluation = evaluateContrast('#eeeeee', '#ffffff');
       assert.ok(evaluation.ratio > 0);
+      assert.equal(evaluation.isDownloadAllowed, false);
       assert.ok(evaluation.warningMessage !== null);
     });
   });

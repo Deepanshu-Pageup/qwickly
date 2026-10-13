@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   buildInternationalPhone,
   findCountry,
-  guessCountryFromLocale,
   sanitizeNationalNumber,
 } from '@/lib/countries';
 import { FormSection, CharCounter } from './form-section';
@@ -34,19 +33,7 @@ export function WhatsAppForm({ value, onChange }: WhatsAppFormProps) {
   const dial = findCountry(value.country).dial;
   const maxNationalDigits = 15 - dial.length;
 
-  // Pre-select the visitor's likely country once, only while the form is still pristine.
-  const didGuessCountry = React.useRef(false);
-  React.useEffect(() => {
-    if (didGuessCountry.current) return;
-    didGuessCountry.current = true;
-    if (value.phone || value.message) return;
-    const guess = guessCountryFromLocale(typeof navigator !== 'undefined' ? navigator.language : undefined);
-    if (guess !== value.country) {
-      onChange({ ...value, country: guess }, null, false);
-    }
-    // Runs once on mount; `value`/`onChange` are intentionally read at that moment only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Form opens with India (+91) default. Users can freely switch countries via the selector.
 
   const toPayload = (next: WhatsAppFormValue) => ({
     phone: buildInternationalPhone(findCountry(next.country).dial, next.phone),

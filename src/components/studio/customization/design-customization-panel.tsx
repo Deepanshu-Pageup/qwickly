@@ -43,7 +43,7 @@ const BG_PRESETS: Swatch[] = [
 const LEVELS: ErrorCorrectionLevel[] = ['L', 'M', 'Q', 'H'];
 const MARGINS = [0, 2, 4, 6] as const;
 
-/** Color field: circular named swatches plus an editable hex input that tolerates partial typing. */
+/** Color field: circular named swatches, interactive color picker, and an editable hex input that tolerates partial typing. */
 function ColorField({
   idPrefix,
   label,
@@ -61,6 +61,18 @@ function ColorField({
   const [draft, setDraft] = useState<string | null>(null);
   const text = draft ?? value;
   const isInvalid = draft !== null && !hexColorSchema.safeParse(draft).success;
+
+  // Format 6-digit hex for native input[type="color"]
+  const normalizedPickerHex = React.useMemo(() => {
+    const clean = value.trim().replace(/^#/, '');
+    if (clean.length === 3) {
+      return `#${clean[0]}${clean[0]}${clean[1]}${clean[1]}${clean[2]}${clean[2]}`.toLowerCase();
+    }
+    if (clean.length === 6) {
+      return `#${clean}`.toLowerCase();
+    }
+    return '#000000';
+  }, [value]);
 
   return (
     <Field>
@@ -97,25 +109,49 @@ function ColorField({
           );
         })}
       </div>
-      <Input
-        id={`${idPrefix}-hex`}
-        type="text"
-        maxLength={7}
-        spellCheck={false}
-        autoComplete="off"
-        value={text}
-        onChange={(e) => {
-          const next = e.target.value;
-          setDraft(next);
-          const parsed = hexColorSchema.safeParse(next);
-          if (parsed.success) onCommit(parsed.data);
-        }}
-        onBlur={() => setDraft(null)}
-        aria-invalid={isInvalid}
-        aria-describedby={isInvalid ? `${idPrefix}-hex-error` : undefined}
-        className="font-mono uppercase"
-        placeholder="#000000"
-      />
+      <div className="flex items-center gap-2">
+        <label
+          htmlFor={`${idPrefix}-picker`}
+          className="relative flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-input bg-background p-1 shadow-xs transition-colors hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
+          title={`Choose custom ${label.toLowerCase()} color`}
+        >
+          <span
+            className="size-full rounded-sm border border-black/10"
+            style={{ backgroundColor: normalizedPickerHex }}
+            aria-hidden="true"
+          />
+          <input
+            id={`${idPrefix}-picker`}
+            type="color"
+            value={normalizedPickerHex}
+            onChange={(e) => {
+              setDraft(null);
+              onCommit(e.target.value.toLowerCase());
+            }}
+            className="sr-only"
+            aria-label={`${label} visual color picker`}
+          />
+        </label>
+        <Input
+          id={`${idPrefix}-hex`}
+          type="text"
+          maxLength={7}
+          spellCheck={false}
+          autoComplete="off"
+          value={text}
+          onChange={(e) => {
+            const next = e.target.value;
+            setDraft(next);
+            const parsed = hexColorSchema.safeParse(next);
+            if (parsed.success) onCommit(parsed.data);
+          }}
+          onBlur={() => setDraft(null)}
+          aria-invalid={isInvalid}
+          aria-describedby={isInvalid ? `${idPrefix}-hex-error` : undefined}
+          className="font-mono uppercase"
+          placeholder="#000000"
+        />
+      </div>
       {isInvalid && (
         <p id={`${idPrefix}-hex-error`} className="text-xs text-destructive-foreground" role="alert">
           Enter a hex color such as #000000 or #FFF.

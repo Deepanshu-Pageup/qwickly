@@ -24,7 +24,7 @@ const DIAL_CODES: Readonly<Record<string, string>> = {
   US: '1', UY: '598', UZ: '998', VE: '58', VN: '84', YE: '967', ZM: '260', ZW: '263',
 };
 
-export const DEFAULT_COUNTRY = 'US';
+export const DEFAULT_COUNTRY = 'IN';
 
 export interface Country {
   /** ISO 3166-1 alpha-2 code, e.g. "IN". */

@@ -49,6 +49,32 @@ describe('Sub-phase 2.7: File Service & Export Suite', () => {
       assert.ok(svg.includes('fill="#1e40af"'));
     });
 
+    it('rejects export when design has low contrast or inverted colors', () => {
+      const invertedDesign: QrDesignSettings = {
+        fgColor: '#ffffff',
+        bgColor: '#000000',
+        level: 'M',
+        marginSize: 4,
+        logo: null,
+      };
+      assert.throws(
+        () => fileService.generateSvgString('https://example.com/test', invertedDesign),
+        /Cannot export QR code with inverted color scheme/
+      );
+
+      const lowContrastDesign: QrDesignSettings = {
+        fgColor: '#999999',
+        bgColor: '#ffffff',
+        level: 'M',
+        marginSize: 4,
+        logo: null,
+      };
+      assert.throws(
+        () => fileService.generateSvgString('https://example.com/test', lowContrastDesign),
+        /Cannot export QR code with insufficient contrast/
+      );
+    });
+
     it('embeds image tag and raises error level when logo is provided', () => {
       const design: QrDesignSettings = {
         fgColor: '#000000',

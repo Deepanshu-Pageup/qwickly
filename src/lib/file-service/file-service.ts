@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import {
   QrDesignSettings,
   getEffectiveErrorLevel,
+  evaluateContrast,
 } from '@/schemas/qr-design';
 import {
   ExportOptions,
@@ -110,6 +111,7 @@ export class FileService {
     targetSize: number = 1024
   ): string {
     this.validateValue(value);
+    this.validateContrast(designSettings);
 
     const fgColor = designSettings?.fgColor ?? '#000000';
     const bgColor = designSettings?.bgColor ?? '#ffffff';
@@ -512,6 +514,22 @@ export class FileService {
   private validateValue(value: string): void {
     if (!value || typeof value !== 'string' || value.trim().length === 0) {
       throw new Error('Cannot export empty or invalid QR code payload.');
+    }
+  }
+
+  /**
+   * Validates color contrast prior to export. Blocks inverted colors and contrast < 4.5:1.
+   */
+  private validateContrast(designSettings?: QrDesignSettings): void {
+    if (!designSettings) return;
+    const contrast = evaluateContrast(designSettings.fgColor, designSettings.bgColor);
+    if (!contrast.isDownloadAllowed) {
+      if (contrast.isInverted) {
+        throw new Error('Cannot export QR code with inverted color scheme (light foreground on dark background).');
+      }
+      throw new Error(
+        `Cannot export QR code with insufficient contrast (${contrast.ratio.toFixed(1)}:1 is below the required 4.5:1 threshold).`
+      );
     }
   }
 }

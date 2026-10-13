@@ -41,7 +41,7 @@ export default function Home() {
   });
 
   const [whatsappState, setWhatsappState] = useState<FormState<WhatsAppFormValue>>({
-    raw: { country: 'US', phone: '', message: '' },
+    raw: { country: 'IN', phone: '', message: '' },
     encoded: null,
     isValid: false,
   });

@@ -42,6 +42,7 @@ export interface ContrastEvaluation {
   ratio: number;
   isLowContrast: boolean;
   isInverted: boolean;
+  isDownloadAllowed: boolean;
   warningMessage: string | null;
 }
 
@@ -49,6 +50,7 @@ export interface ContrastEvaluation {
  * Evaluates contrast between QR foreground and background.
  * Note: The 4.5:1 ratio is a typographic advisory heuristic; it does NOT guarantee
  * optical camera scannability under real-world lighting or physical sensors.
+ * For download/export validation, schemes must be non-inverted with ratio >= 4.5:1.
  */
 export function evaluateContrast(fgHex: string, bgHex: string): ContrastEvaluation {
   const fgRgb = parseHexColor(fgHex) || [0, 0, 0];
@@ -62,6 +64,7 @@ export function evaluateContrast(fgHex: string, bgHex: string): ContrastEvaluati
 
   const isInverted = L1 > L2; // Light modules on dark background
   const isLowContrast = ratio < 4.5;
+  const isDownloadAllowed = !isInverted && !isLowContrast;
 
   let warningMessage: string | null = null;
   if (isInverted) {
@@ -75,6 +78,7 @@ export function evaluateContrast(fgHex: string, bgHex: string): ContrastEvaluati
     ratio,
     isLowContrast,
     isInverted,
+    isDownloadAllowed,
     warningMessage,
   };
 }

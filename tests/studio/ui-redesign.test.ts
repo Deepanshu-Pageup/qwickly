@@ -20,12 +20,12 @@ describe('Country code selector helpers', () => {
     assert.equal(findCountry('US').dial, '1');
   });
 
-  it('falls back to +1 for unknown countries and locales', () => {
-    assert.equal(findCountry('ZZ').dial, '1');
+  it('falls back to India (+91) for unknown countries and locales', () => {
+    assert.equal(findCountry('ZZ').dial, '91');
     assert.equal(guessCountryFromLocale('en-IN'), 'IN');
-    assert.equal(guessCountryFromLocale('en'), 'US');
-    assert.equal(guessCountryFromLocale(undefined), 'US');
-    assert.equal(guessCountryFromLocale('xx-ZZ'), 'US');
+    assert.equal(guessCountryFromLocale('en'), 'IN');
+    assert.equal(guessCountryFromLocale(undefined), 'IN');
+    assert.equal(guessCountryFromLocale('xx-ZZ'), 'IN');
   });
 
   it('combines code and number without spaces or duplicate plus signs', () => {
